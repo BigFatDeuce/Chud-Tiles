@@ -1,0 +1,71 @@
+{
+  "name": "chud-tiles",
+  "productName": "Chud Tiles",
+  "desktopName": "chud-tiles.desktop",
+  "version": "1.0.0",
+  "description": "Jeu de rythme qui transforme votre musique (YouTube Music, fichiers locaux) en partition jouable",
+  "private": true,
+  "main": "out/main/index.js",
+  "type": "commonjs",
+  "author": {
+    "name": "Chud Tiles"
+  },
+  "homepage": "https://github.com/BigFatDeuce/Chud-Tiles",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BigFatDeuce/Chud-Tiles.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BigFatDeuce/Chud-Tiles/issues"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "web:dev": "vite --config vite.web.config.ts",
+    "web:build": "vite build --config vite.web.config.ts",
+    "web:preview": "vite preview --config vite.web.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test:unit": "node tests/unit/run.mjs",
+    "test:e2e": "electron-vite build && node tests/e2e/run.mjs",
+    "test:online": "electron-vite build && node tests/e2e/youtube.mjs",
+    "test:web": "vite build --config vite.web.config.ts && node tests/e2e/web.mjs",
+    "test:web-online": "vite build --config vite.web.config.ts && node tests/e2e/web-youtube.mjs",
+    "test:i18n": "node scripts/i18n-extract.mjs check",
+    "test:fixtures": "node tests/fixtures/make-fixtures.mjs",
+    "make:icons": "node scripts/make-icons.mjs",
+    "dist:win": "node scripts/prepare-dist.mjs win && electron-vite build && electron-builder --win --publish never --config electron-builder.config.cjs",
+    "dist:dir": "node scripts/prepare-dist.mjs win && electron-vite build && electron-builder --win --dir --publish never --config electron-builder.config.cjs",
+    "dist:linux": "node scripts/prepare-dist.mjs linux && electron-vite build && electron-builder --linux --publish never --config electron-builder.config.cjs",
+    "dist:mac": "node scripts/prepare-dist.mjs mac && electron-vite build && electron-builder --mac --publish never --config electron-builder.config.cjs"
+  },
+  "dependencies": {
+    "@ghostery/adblocker": "2.20.3",
+    "@ghostery/adblocker-electron": "2.20.3",
+    "music-metadata": "12.8.1",
+    "youtubei.js": "18.3.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "7.29.15",
+    "@babel/traverse": "7.29.15",
+    "@fontsource-variable/oxanium": "5.3.0",
+    "@fontsource-variable/space-grotesk": "5.3.0",
+    "@resvg/resvg-js": "2.6.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "0.187.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "electron": "45.2.2",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "lucide-react": "1.77.0",
+    "playwright": "1.65.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "0.187.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "zustand": "5.1.0"
+  }
+}

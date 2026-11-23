@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+dist-web/
+*.log
+tests/fixtures/audio/
+tests/output/
+build/vendor/
+build/THIRD-PARTY-NOTICES.txt
+scripts/.i18n-missing.json
+scripts/.i18n-report.txt
+.chud-music-dir
