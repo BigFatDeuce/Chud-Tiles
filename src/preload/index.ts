@@ -60,6 +60,14 @@ const api: CtBridge = {
       onStatus: (cb) => subscribe('adblock:status', cb),
     },
   },
+  ytdlp: {
+    status: () => ipcRenderer.invoke('ytdlp:status'),
+    install: () => ipcRenderer.invoke('ytdlp:install'),
+    prepare: () => ipcRenderer.invoke('ytdlp:prepare'),
+    download: (id) => ipcRenderer.invoke('ytdlp:download', id),
+    onProgress: (cb) => subscribe('ytdlp:progress', cb),
+    clear: () => ipcRenderer.invoke('ytdlp:clear'),
+  },
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
     toggleMaximize: () => ipcRenderer.send('win:toggle-maximize'),
@@ -67,6 +75,7 @@ const api: CtBridge = {
     setFullscreen: (on) => ipcRenderer.send('win:fullscreen', on),
     isFullscreen: () => ipcRenderer.invoke('win:is-fullscreen'),
     onFullscreen: (cb) => subscribe('win:fullscreen', cb),
+    onVisible: (cb) => subscribe('win:visible', cb),
   },
   openExternal: (url) => ipcRenderer.send('app:open-external', url),
   setLang: (l) => ipcRenderer.send('app:lang', l),

@@ -10,6 +10,7 @@ import * as youtube from './chud/youtube';
 import { initYouTubeSession, YT_PARTITION, YT_PLAYER_URL, ytBlocked } from './chud/yt-player';
 import { adblockNeeded, adblockStatus, checkLists, initAdblock, setAdblockEnabled } from './chud/adblock';
 import { say, setLang } from './i18n';
+import * as ytdlp from './ytdlp';
 import { initSafeMode, interfaceLost, restart, safe, startedFine, watchGpu } from './safe-mode';
 
 // Chud Tiles' desktop shell (Windows, Linux, macOS). The game itself is the page (src/renderer);
@@ -34,9 +35,10 @@ if (QUIET) {
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
 }
-// The game's clock and its frame pacing: never throttled, high-refresh screens unlocked.
+// The game's clock is never throttled. Images follow the screen's own refresh rate (60, 120, 144,
+// 240 Hz…): `disable-frame-rate-limit` must never come back, it made Chromium draw thousands of
+// images per second and saturated the graphics card.
 app.commandLine.appendSwitch('disable-background-timer-throttling');
-app.commandLine.appendSwitch('disable-frame-rate-limit');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else start();
@@ -61,6 +63,8 @@ function start(): void {
   void app.whenReady().then(() => {
     // songs of Chud Music's library stay playable after a restart (its list is read again on demand)
     addAllowSource(chudMusicHas);
+    // songs downloaded with yt-dlp (optional mode)
+    addAllowSource(ytdlp.isDownloaded);
     handleProtocol();
     const send = (channel: string, payload?: unknown) => {
       if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send(channel, payload);
@@ -124,6 +128,14 @@ function createWindow(): BrowserWindow {
   win.on('moved', persist);
   win.on('maximize', persist);
   win.on('unmaximize', persist);
+  // a minimised or hidden window draws nothing (the page is never throttled, see backgroundThrottling)
+  const visible = (v: boolean) => () => {
+    if (!win.isDestroyed()) win.webContents.send('win:visible', v);
+  };
+  win.on('minimize', visible(false));
+  win.on('hide', visible(false));
+  win.on('restore', visible(true));
+  win.on('show', visible(true));
   win.on('enter-full-screen', () => {
     persist();
     win.webContents.send('win:fullscreen', true);
@@ -215,6 +227,16 @@ function registerIpc(getWin: () => BrowserWindow | null, send: (channel: string,
   ipcMain.handle('yt:video', (_e, id: unknown) => youtube.video(str(id, 20)));
   ipcMain.handle('yt:mix', (_e, id: unknown) => youtube.mix(str(id, 20)));
   ipcMain.handle('yt:blocked', () => ytBlocked());
+
+  // optional download mode (yt-dlp), off by default
+  ipcMain.handle('ytdlp:status', () => ytdlp.status());
+  ipcMain.handle('ytdlp:install', () => ytdlp.install());
+  ipcMain.handle('ytdlp:prepare', () => ytdlp.prepare());
+  ipcMain.handle('ytdlp:download', (_e, id: unknown) => {
+    const v = str(id, 20);
+    return ytdlp.download(v, (p) => send('ytdlp:progress', { id: v, p }));
+  });
+  ipcMain.handle('ytdlp:clear', () => ytdlp.clear());
 
   // ad blocker
   ipcMain.handle('adblock:status', () => adblockStatus());

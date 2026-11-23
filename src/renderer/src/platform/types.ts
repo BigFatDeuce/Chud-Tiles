@@ -1,4 +1,4 @@
-import type { AdblockStatus, ChudMusicLibrary, LibraryScan, Playlist, TrackRef, YtItem, YtSearchKind } from '@shared/types';
+import type { AdblockStatus, ChudMusicLibrary, LibraryScan, Playlist, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind } from '@shared/types';
 
 // What the game asks of the system it runs on. Two implementations: Electron (Windows, Linux,
 // macOS: everything) and the browser (local files, YouTube by link). The interface shows or hides
@@ -74,6 +74,15 @@ export interface Platform {
       onStatus(cb: (s: AdblockStatus) => void): () => void;
     };
   };
+  /** Desktop: optional download of YouTube songs with yt-dlp (then played as local files). */
+  ytdlp?: {
+    status(): Promise<YtdlpStatus>;
+    install(): Promise<YtdlpStatus>;
+    /** Installs yt-dlp if missing, or updates Chud Tiles' copy (at launch). */
+    prepare(): Promise<void>;
+    download(id: string, onProgress: (p: number) => void): Promise<YtDownloaded>;
+    clear(): Promise<void>;
+  };
   window?: {
     minimize(): void;
     toggleMaximize(): void;
@@ -81,6 +90,8 @@ export interface Platform {
     setFullscreen(on: boolean): void;
     isFullscreen(): Promise<boolean>;
     onFullscreen(cb: (on: boolean) => void): () => void;
+    /** The window was minimised or hidden (false), or shown again (true). */
+    onVisible?(cb: (visible: boolean) => void): () => void;
   };
   openExternal(url: string): void;
   playlists?: {

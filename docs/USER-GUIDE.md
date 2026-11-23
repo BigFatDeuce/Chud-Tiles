@@ -63,12 +63,12 @@ Analysing a file takes about a second per minute of music, once: it is then cach
 
 | Action | Keyboard (default) | Gamepad | Mouse / touch |
 |---|---|---|---|
-| Lanes, 4 lanes | D F J K (or ← ↓ ↑ →) | D-pad and shoulders on the left, face buttons and shoulders on the right | touch the lane |
-| Lanes, 3 / 5 / 6 / 7 | F Space J · D F Space J K · S D F J K L · S D F Space J K L | same | same |
+| Lanes, 4 lanes | 1 2 3 4, the keyboard's number row (or ← ↓ ↑ →) | D-pad and shoulders on the left, face buttons and shoulders on the right | touch the lane |
+| Lanes, 3 / 5 / 6 / 7 | 1 2 3 · 1 to 5 · 1 to 6 · 1 to 7 | same | same |
 | Pause | Esc | Start | pause button, bottom right |
-| Restart | ² (or `) | — | pause menu |
+| Restart | Backspace (⌫) | — | pause menu |
 
-Every key and button can be changed in Settings › Controls (one layout per number of lanes).
+Every key and button can be changed in Settings › Controls (one layout per number of lanes). **Keys under the lanes** (same tab) writes each lane's key or button under the hit line during a run: keyboard, controller, or *Auto* (the last one used).
 
 **Notes**: tap, **hold** (keep pressed to the end; letting go early breaks the combo), **chord** (several lanes at once).
 
@@ -84,7 +84,12 @@ Every key and button can be changed in Settings › Controls (one layout per num
 
 ## 6. YouTube Music
 
-The music is played **by the official YouTube player**, visible in a corner during the run. Nothing is downloaded, no stream is extracted.
+Two ways to play a YouTube song (Settings › YouTube › YouTube songs play through):
+
+1. **Download the sound** (default, desktop app): the sound is downloaded once with [yt-dlp](https://github.com/yt-dlp/yt-dlp), then played and analysed like a file: the full chart from the first run, no ads, no stutter. yt-dlp installs itself on the first song (in Chud Tiles' profile). Downloaded songs can be deleted in Settings › YouTube. Note: downloading goes against YouTube's terms of service (personal use, at your own risk).
+2. **Official player, live**: the music is played by the official YouTube player, visible in a corner during the run; nothing is downloaded. It is also the automatic fallback when a download fails. The player preloads about 30 s of music before the run to avoid stutter.
+
+With the official player:
 
 - **First encounter** with a song: two choices.
   - **Play live** (mode A): notes are written while the song plays, slightly ahead (rhythm prediction). The first seconds "tune in the signal". A predicted note the music does not confirm fades away: missing it costs nothing.

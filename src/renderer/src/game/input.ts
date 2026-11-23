@@ -89,7 +89,8 @@ export class InputRouter {
       if (!e.repeat) this.onAction?.('pause');
       return;
     }
-    if (e.code === 'Backquote' && !e.repeat) {
+    // restart: Backspace, away from the lanes (² sits right next to 1)
+    if (e.code === 'Backspace' && !e.repeat) {
       this.onAction?.('restart');
       return;
     }

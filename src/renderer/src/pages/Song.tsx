@@ -20,6 +20,7 @@ import { go, useNav } from '../store/nav';
 import { best, runsOf } from '../store/profile';
 import { Cover, DIFF_COLOR, DIFF_LABEL, Range, RANK_COLOR, Seg, Toggle, fmtPct, fmtScore, fmtTime } from '../components/ui';
 import { playSfx } from '../audio/sfx';
+import { platform } from '../platform';
 
 /** Nominal level of a live chart (its notes are only known while it plays). */
 const LIVE_LEVEL: Record<DifficultyId, number> = { easy: 3, normal: 6, hard: 10, expert: 14, custom: 7 };
@@ -51,6 +52,7 @@ interface Prepared {
 }
 
 const STAGE: Record<LoadProgress['stage'], string> = {
+  download: tr('Téléchargement du son (yt-dlp)'),
   read: tr('Lecture du fichier'),
   decode: tr('Décodage audio'),
   convert: tr('Conversion (FFmpeg)'),
@@ -131,10 +133,16 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
   const back = useNav((st) => st.back);
   const [progress, setProgress] = useState<LoadProgress>({ stage: 'read', p: 0 });
   const [song, setSong] = useState<Prepared | null>(null);
-  const isYt = track.source === 'youtube' && !!track.videoId;
+  // YouTube song in download mode (Settings › YouTube): its sound is fetched with yt-dlp and the
+  // song is then handled as a local file; otherwise the official player plays it
+  const [dl, setDl] = useState(() => track.source === 'youtube' && !!track.videoId && s.ytSource === 'download' && !!platform.ytdlp);
+  const isYt = track.source === 'youtube' && !!track.videoId && !dl;
+  /** The download failed and the player took over: the song page offers to try again. */
+  const [dlFailed, setDlFailed] = useState(false);
   const slotRef = useRef<HTMLDivElement>(null);
   const [host, setHost] = useState<YtHost | null>(null);
   const [ytState, setYtState] = useState<'priming' | 'ready' | 'error'>('priming');
+  const [preload, setPreload] = useState(0);
   const [ytDuration, setYtDuration] = useState(track.duration ?? 0);
   /** YouTube: not learned yet (live play or listen first). */
   const [unlearned, setUnlearned] = useState(false);
@@ -205,19 +213,33 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
         }
       };
     }
-    loadLocal(track, file, (p) => alive && setProgress(p))
+    const load = dl
+      ? (setProgress({ stage: 'download', p: 0 }),
+        platform.ytdlp!.download(track.videoId!, (p) => alive && setProgress({ stage: 'download', p })).then((d) =>
+          // the analysis is cached apart from the one learned by ear (`yt:` key)
+          loadLocal({ ...track, key: `ytdl:${track.videoId}`, path: d.path, size: d.size, mtime: d.mtime }, undefined, (p) => alive && setProgress(p)),
+        ))
+      : loadLocal(track, file, (p) => alive && setProgress(p));
+    load
       .then((r) => {
         if (!alive) return;
         setSong({ analysis: r.analysis, buffer: r.buffer, cached: r.cached });
         if (!track.duration) void lib.add([{ ...track, duration: r.buffer.duration }]);
       })
-      .catch((e) => alive && setError(errorText(e)));
+      .catch((e) => {
+        if (!alive) return;
+        if (!dl) return setError(errorText(e));
+        // download failed: the official player takes over (live notes, or listen first)
+        toast({ kind: 'error', title: tr('Téléchargement impossible : lecteur YouTube'), text: errorText(e) }, 8000);
+        setDlFailed(true);
+        setDl(false);
+      });
     runsOf(track.key).then((r) => alive && setRuns(r));
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track.key]);
+  }, [track.key, dl]);
 
   const duration = song?.buffer?.duration ?? (isYt ? ytDuration || song?.analysis.duration || 0 : (song?.analysis.duration ?? t.duration ?? 0));
 
@@ -286,6 +308,12 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
     setUnlearned(true);
   };
 
+  // YouTube: how much of the song is buffered before the run may start
+  useEffect(() => {
+    if (!host || ytState !== 'priming') return;
+    const timer = setInterval(() => setPreload(host.preload), 300);
+    return () => clearInterval(timer);
+  }, [host, ytState]);
   // charts edited in the workshop replace the generated ones
   const [edits, setEdits] = useState<Partial<Record<DifficultyId, EditedChart>>>({});
   useEffect(() => {
@@ -392,10 +420,22 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
           </div>
           {isYt && (
             <div className="yt-slot-wrap">
+              {dlFailed && !listen && (
+                <button
+                  className="btn small"
+                  style={{ marginBottom: 8 }}
+                  onClick={() => {
+                    setDlFailed(false);
+                    setDl(true);
+                  }}
+                >
+                  <RotateCcw size={14} /> {tr('Réessayer le téléchargement')}
+                </button>
+              )}
               <div className="yt-slot" ref={slotRef}>
                 {ytState === 'priming' && (
                   <div className="yt-slot-wait">
-                    <Loader2 className="spin" size={18} /> {tr('Lecteur YouTube')}
+                    <Loader2 className="spin" size={18} /> {preload > 0 ? tr('Préchargement {p} %', { p: Math.round(preload * 100) }) : tr('Lecteur YouTube')}
                   </div>
                 )}
               </div>
@@ -408,6 +448,11 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
                 <b>{tr('Impossible de préparer ce morceau')}</b>
               </div>
               <p className="tip">{error}</p>
+              {dl && (
+                <button className="btn small" onClick={() => setDl(false)}>
+                  <Radio size={14} /> {tr('Jouer avec le lecteur YouTube')}
+                </button>
+              )}
             </div>
           ) : isYt && !song && learning ? (
             <div className="panel analysing">
@@ -486,10 +531,10 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
                 <Loader2 className="spin" size={18} color="var(--cyan)" />
                 <b>{STAGE[progress.stage]}</b>
                 <span className="grow" />
-                {progress.stage === 'analyse' && <span className="num muted">{Math.round(progress.p * 100)} %</span>}
+                {(progress.stage === 'analyse' || progress.stage === 'download') && <span className="num muted">{Math.round(progress.p * 100)} %</span>}
               </div>
               <div className="progress">
-                <i style={{ width: `${progress.stage === 'analyse' ? 10 + progress.p * 90 : progress.stage === 'decode' ? 6 : 2}%` }} />
+                <i style={{ width: `${progress.stage === 'download' ? progress.p * 100 : progress.stage === 'analyse' ? 10 + progress.p * 90 : progress.stage === 'decode' ? 6 : 2}%` }} />
               </div>
               <span className="tip">{tr('Le fichier original n’est jamais modifié. L’analyse est faite une seule fois puis gardée en mémoire.')}</span>
             </div>

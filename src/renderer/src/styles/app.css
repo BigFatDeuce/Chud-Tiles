@@ -248,6 +248,9 @@ button.chip:hover { border-color: var(--line-2); color: var(--ink); }
 .countdown { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 700; font-size: 120px; color: #fff; text-shadow: 0 0 40px var(--cyan); animation: count 0.95s var(--ease) both; }
 @keyframes count { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); } }
 .fps { position: absolute; left: 12px; bottom: 10px; font-family: var(--display); font-size: 11px; color: var(--ink-3); letter-spacing: 0.08em; }
+.lane-keys { position: absolute; inset: 0; pointer-events: none; }
+.lane-key { position: absolute; transform: translateX(-50%); font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-2); padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(5, 6, 20, 0.45); white-space: nowrap; }
+.lane-keys[data-mode="keyboard"] .p, .lane-keys[data-mode="pad"] .k { display: none; }
 .hud .pause-btn { position: absolute; pointer-events: auto; right: 20px; bottom: 18px; }
 
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(5, 6, 20, 0.55), rgba(3, 4, 12, 0.85)); backdrop-filter: blur(8px); z-index: 20; animation: fadeIn 0.25s both; }

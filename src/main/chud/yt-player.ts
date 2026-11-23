@@ -69,7 +69,7 @@ const PLAYER_HTML = `<!doctype html>
       playerVars: { autoplay: 0, controls: 0, disablekb: 1, fs: 0, playsinline: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0, origin: location.origin },
       events: {
         onReady: () => { ready = true; applyVolume(); emit({ type: 'ready' }); if (pending) { run(pending); pending = null; } },
-        onStateChange: (e) => { if (e.data === 1 || e.data === 3) { noCaptions(); applyRate(); } emit({ type: 'state', state: e.data }); clearInterval(timer); if (e.data === 1) timer = setInterval(tick, 250); tick(); },
+        onStateChange: (e) => { if (e.data === 1 || e.data === 3) { noCaptions(); applyRate(); } emit({ type: 'state', state: e.data }); clearInterval(timer); if (e.data === 1 || e.data === 2 || e.data === 3) timer = setInterval(tick, 250); tick(); },
         onApiChange: () => noCaptions(),
         onError: (e) => emit({ type: 'error', code: e.data }),
       },

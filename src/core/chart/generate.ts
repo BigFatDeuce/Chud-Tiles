@@ -205,6 +205,25 @@ export function generateChart(an: Analysis, opt: GenerateOptions): Chart {
     if (lenBeats < p.minHoldBeats || end > endAt) continue;
     holdOf.set(c, end - c.t);
   }
+  // fewer sustained sounds than wanted: a note followed by a breath (≥ 1.5 beats of nothing) rings
+  // on as a long note until just before the next one — tonal notes first, then the strongest
+  if (holdOf.size < maxHolds) {
+    const breaths = chosen
+      .map((c, i) => ({ c, next: chosen[i + 1] }))
+      .filter(({ c, next }) => !c.synthetic && !holdOf.has(c) && !!next && next.t - c.t >= 1.5 * beatDurAt(c.t))
+      .sort((a, b) => b.c.mix[TONAL] - a.c.mix[TONAL] || b.c.sal - a.c.sal);
+    for (const { c, next } of breaths) {
+      if (holdOf.size >= maxHolds) break;
+      const bd = beatDurAt(c.t);
+      const q = p.finest >= 2 ? 0.5 : 1;
+      const room = next!.t - c.t - Math.max(p.minGap, 0.5 * bd);
+      const lenBeats = Math.floor(Math.min(room, 2 * bd) / bd / q) * q;
+      if (lenBeats < p.minHoldBeats) continue;
+      const end = hasGrid ? beatTime(beats, c.pos + lenBeats) : c.t + lenBeats * bd;
+      if (end > endAt || end > next!.t - p.minGap) continue;
+      holdOf.set(c, end - c.t);
+    }
+  }
   // calm, sustained bars with nothing to play: one long note on the downbeat
   if (hasGrid) {
     const loudRef = bars.map((b) => b.loud).sort((a, b) => a - b)[Math.floor(bars.length * 0.5)] ?? -30;

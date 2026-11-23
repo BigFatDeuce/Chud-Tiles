@@ -27,7 +27,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 
 **Your music, untouched**
 - Local files: MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA, ALAC. Drag and drop, watched folders, favourites. Files are never copied or modified.
-- YouTube Music through **YouTube's official player**: search, albums, playlists, radio. Nothing is downloaded and no audio stream is extracted; only rhythm measurements leave the player.
+- YouTube Music: search, albums, playlists, radio. By default the desktop app downloads the song's sound once with [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installed on first use) and plays it like a local file: full chart at once, no ads, no stutter. The other way is **YouTube's official player**, live, with nothing downloaded (also the fallback when a download fails):
   - *Play live*: notes are predicted a moment ahead while the song plays.
   - *Listen first*: one full listen, then the complete chart.
   - A song played live to the end is *learned*: the next run gets the full chart.
@@ -67,9 +67,9 @@ Your profile, records and analyses stay on your computer (`%APPDATA%\Chud Tiles`
 
 | Action | Keyboard | Gamepad | Mouse / touch |
 |---|---|---|---|
-| Lanes (4 lanes) | `D` `F` `J` `K` or arrows | D-pad, face buttons, shoulders | tap the lane |
+| Lanes (4 lanes) | `1` `2` `3` `4` (number row) or arrows | D-pad, face buttons, shoulders | tap the lane |
 | Pause | `Esc` | Start | pause button |
-| Restart | `` ` `` | — | pause menu |
+| Restart | `Backspace` | — | pause menu |
 
 Judgements: Perfect ±45 ms, Great ±90 ms, Good ±135 ms. Full rules, other lane counts and troubleshooting are in the [player guide](docs/USER-GUIDE.md).
 
@@ -112,5 +112,5 @@ Electron, React, TypeScript, Three.js, Zustand, Vite and electron-vite, [youtube
 
 ## Notes
 
-- Chud Tiles is not affiliated with YouTube or Google. YouTube videos are played by YouTube's official embedded player and remain subject to YouTube's terms. The optional ad blocker may go against those terms; it can be switched off in Settings › YouTube.
+- Chud Tiles is not affiliated with YouTube or Google. YouTube videos are played by YouTube's official embedded player and remain subject to YouTube's terms. Downloading songs with yt-dlp (the default on the desktop) and the ad blocker go against those terms: both are for personal use, at your own risk, and can be switched off in Settings › YouTube.
 - No licence has been chosen yet: the code is public to read, but all rights are reserved.

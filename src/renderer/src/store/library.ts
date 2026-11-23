@@ -54,9 +54,42 @@ export const useLibrary = create<LibraryStore>((set, get) => ({
   },
 }));
 
+const fold = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[([][^)\]]*(official|video|audio|lyric|clip|visuali[sz]er|hd|4k|remaster|music)[^)\]]*[)\]]/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+
+/**
+ * The same song seen under several keys (a picked file and the scanned folder, Chud Music's copy,
+ * the YouTube clip and the audio track) has one identity: its title and artist, cleaned of the
+ * usual decorations ("(Official Video)", "Artist - Topic"…).
+ */
+export function songId(t: Pick<TrackRef, 'key' | 'title' | 'artist'>): string {
+  const artist = fold((t.artist ?? '').replace(/\s*-\s*topic$/i, '').replace(/vevo$/i, ''));
+  let title = fold(t.title);
+  if (artist && title.startsWith(`${artist} `)) title = title.slice(artist.length + 1);
+  return title ? `${artist}|${title}` : t.key;
+}
+
+/** Keeps the first of each song (lists already sorted by what matters). */
+export function uniqueSongs<T extends Pick<TrackRef, 'key' | 'title' | 'artist'>>(list: T[]): T[] {
+  const seen = new Set<string>();
+  return list.filter((t) => {
+    const id = songId(t);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 export function recentTracks(tracks: Record<string, TrackRef>, n = 12): TrackRef[] {
-  return Object.values(tracks)
-    .filter((t) => t.lastPlayed)
-    .sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))
-    .slice(0, n);
+  return uniqueSongs(
+    Object.values(tracks)
+      .filter((t) => t.lastPlayed)
+      .sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0)),
+  ).slice(0, n);
 }

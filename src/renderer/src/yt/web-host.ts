@@ -20,6 +20,7 @@ interface YTPlayer {
   setPlaybackRate(r: number): void;
   getCurrentTime(): number;
   getDuration(): number;
+  getVideoLoadedFraction(): number;
   getPlayerState(): number;
   getPlaybackRate(): number;
 }
@@ -108,6 +109,7 @@ export class IframeHost extends BaseHost implements YtHost {
       const st = p.getPlayerState();
       const d = p.getDuration();
       if (d > 0) this.duration = d;
+      this.loaded = p.getVideoLoadedFraction() || 0;
       this.clock(p.getCurrentTime() || 0, performance.now(), st !== YT_PLAYING, false, st === 3, p.getPlaybackRate() || 1);
     }, 50);
   }

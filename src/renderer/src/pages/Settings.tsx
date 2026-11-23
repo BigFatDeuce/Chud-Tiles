@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Gamepad2, Gauge, Info, Keyboard, MonitorCog, Music2, Radio, RefreshCw, RotateCcw, Database, Download, ShieldCheck, Upload, Trash2, Sliders } from 'lucide-react';
-import type { AdblockStatus } from '@shared/types';
+import type { AdblockStatus, YtdlpStatus } from '@shared/types';
 import { platform } from '../platform';
 import { DEFAULTS, DEFAULT_KEYS, DEFAULT_PAD, keyName, padName, useSettings, type Settings as S } from '../store/settings';
 import { useProfile } from '../store/profile';
@@ -13,7 +13,7 @@ import { go } from '../store/nav';
 import { toast, toastError } from '../store/toasts';
 import { Range, Seg, Toggle } from '../components/ui';
 import { playSfx } from '../audio/sfx';
-import { fmtNum, lang, LANGS, locale, resolve, systemLang, tr } from '../i18n';
+import { fmtNum, lang, LANGS, locale, resolve, systemLang, tr, trn } from '../i18n';
 
 // The station's settings: game, controls (keyboard and gamepad, per number of lanes), audio and
 // synchronisation, display, YouTube, data. Every change applies at once and is kept.
@@ -192,10 +192,6 @@ function ControlsTab() {
         return;
       }
       if (wait.kind === 'key') {
-        if (e.code === 'Backquote') {
-          toast({ kind: 'error', title: tr('Touche réservée'), text: tr('² / ` recommence la partie.') });
-          return;
-        }
         assignKey(e.code);
         playSfx('click', 0.6);
         setWait(null);
@@ -251,6 +247,18 @@ function ControlsTab() {
       <Row title={tr('Nombre de colonnes')} hint={tr('Chaque nombre de colonnes a ses propres touches')}>
         <Seg value={lanes} onChange={(v) => (setLanes(v), setWait(null))} options={[3, 4, 5, 6, 7].map((n) => ({ v: n, label: String(n) }))} />
       </Row>
+      <Row title={tr('Touches sous les pistes')} hint={tr('Écrit la touche ou le bouton de chaque piste sous la ligne de frappe, en jeu')}>
+        <Seg
+          value={s.showKeys}
+          onChange={(v) => s.set({ showKeys: v })}
+          options={[
+            { v: 'off', label: tr('Non') },
+            { v: 'auto', label: tr('Auto') },
+            { v: 'keyboard', label: tr('Clavier') },
+            { v: 'pad', label: tr('Manette') },
+          ]}
+        />
+      </Row>
       <div className="label" style={{ margin: '18px 0 10px' }}>
         <Keyboard size={13} style={{ verticalAlign: -2, marginRight: 6 }} />
         {tr('Clavier')}
@@ -278,7 +286,7 @@ function ControlsTab() {
         ))}
       </div>
       <p className="tip" style={{ marginTop: 16 }}>
-        {tr('Cliquez sur une touche puis appuyez sur la nouvelle (Échap annule, Suppr efface). Une touche ne sert qu’à une colonne à la fois. En jeu : Échap ou Start pour la pause, ² pour recommencer. La souris et l’écran tactile jouent aussi : touchez directement la colonne.')}
+        {tr('Cliquez sur une touche puis appuyez sur la nouvelle (Échap annule, Suppr efface). Une touche ne sert qu’à une colonne à la fois. En jeu : Échap ou Start pour la pause, Retour arrière pour recommencer. La souris et l’écran tactile jouent aussi : touchez directement la colonne.')}
       </p>
       <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
         <button
@@ -461,8 +469,23 @@ function YoutubeTab() {
     <>
       <h2 className="tab-title">{tr('YouTube Music')}</h2>
       <p className="tip" style={{ marginTop: -4 }}>
-        {tr('La musique est jouée par le lecteur officiel YouTube, sans téléchargement ni extraction du flux. Le jeu écoute ce que le lecteur fait entendre pour écrire la partition.')}
+        {s.ytSource === 'download' && platform.ytdlp
+          ? tr('Le son des morceaux YouTube est téléchargé une fois avec yt-dlp, puis joué et analysé comme un fichier local : partition complète dès la première partie, sans publicité ni saccade.')
+          : tr('La musique est jouée par le lecteur officiel YouTube, sans téléchargement ni extraction du flux. Le jeu écoute ce que le lecteur fait entendre pour écrire la partition.')}
       </p>
+      {platform.ytdlp && (
+        <Row title={tr('Lecture des morceaux YouTube')} hint={tr('yt-dlp s’installe seul au premier morceau ; en cas d’échec, le lecteur officiel prend le relais')}>
+          <Seg
+            value={s.ytSource}
+            onChange={(v) => s.set({ ytSource: v })}
+            options={[
+              { v: 'download', label: tr('Télécharger le son') },
+              { v: 'player', label: tr('Lecteur officiel en direct') },
+            ]}
+          />
+        </Row>
+      )}
+      {platform.ytdlp && s.ytSource === 'download' && <YtdlpPanel />}
       <Row title={tr('Première écoute')} hint={s.ytMode === 'live' ? tr('Les notes sont écrites en direct pendant la lecture, avec une petite avance') : tr('Le morceau est d’abord écouté une fois, puis joué avec une partition complète')}>
         <Seg
           value={s.ytMode}
@@ -485,6 +508,68 @@ function YoutubeTab() {
         </div>
       )}
     </>
+  );
+}
+
+/** yt-dlp: found or not, install / update, downloaded songs. */
+function YtdlpPanel() {
+  const y = platform.ytdlp!;
+  const [st, setSt] = useState<YtdlpStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void y.status().then((x) => alive && setSt(x), () => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [y]);
+  const install = async () => {
+    setBusy(true);
+    try {
+      setSt(await y.install());
+      toast({ kind: 'info', title: tr('yt-dlp est prêt') });
+    } catch (e) {
+      toastError(e, tr('Installation impossible'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const clear = async () => {
+    await y.clear();
+    setSt(await y.status());
+  };
+  return (
+    <div className="sync-box" style={{ marginTop: 14 }}>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <Download size={22} color={st?.found ? 'var(--cyan)' : 'var(--gold)'} style={{ flex: 'none', marginTop: 2 }} />
+        <div className="grow">
+          <b>{!st ? tr('Recherche de yt-dlp…') : st.found ? tr('yt-dlp {v}', { v: st.version ?? '' }) : tr('yt-dlp n’est pas installé')}</b>
+          <div className="tip">
+            {st?.found
+              ? st.own
+                ? tr('Installé par Chud Tiles dans son profil.')
+                : tr('Trouvé sur le système.')
+              : tr('Il sera téléchargé depuis sa page officielle (github.com/yt-dlp) au premier morceau YouTube.')}
+            {st && ` ${trn(st.songs, '{n} morceau téléchargé', '{n} morceaux téléchargés')} · ${tr('{mb} Mo', { mb: fmtNum(st.bytes / 1048576, 1) })}`}
+          </div>
+          <div className="tip" style={{ color: 'var(--gold)' }}>
+            {tr('Télécharger le son va à l’encontre des conditions d’utilisation de YouTube : réservé à votre usage personnel, à vos risques.')}
+          </div>
+        </div>
+      </div>
+      <div className="row" style={{ gap: 8, marginTop: 10 }}>
+        {(!st?.found || st.own) && (
+          <button className="btn small" disabled={busy} onClick={() => void install()}>
+            <Download size={14} /> {st?.found ? tr('Mettre à jour yt-dlp') : tr('Installer yt-dlp')}
+          </button>
+        )}
+        {!!st?.songs && (
+          <button className="btn small ghost" onClick={() => void clear()}>
+            <Trash2 size={14} /> {tr('Supprimer les morceaux téléchargés')}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

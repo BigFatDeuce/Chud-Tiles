@@ -47,6 +47,9 @@ export class Engine {
   /** Menus may render at 30 i/s to save power (the game always runs at full rate). */
   idleFps = 0;
   inGame = false;
+  /** The window is minimised or hidden: nothing is drawn (a run keeps its clock, a few times a second). */
+  hidden = false;
+  private lastHook = 0;
   /** Rolling statistics for the FPS counter and adaptive quality. */
   readonly stats = { fps: 0, frameMs: 0, worstMs: 0, frames: 0 };
   private statT = 0;
@@ -150,8 +153,18 @@ export class Engine {
   private frame(now: number): void {
     const r = this.renderer;
     if (!r || this.lost) return;
+    if (this.hidden) {
+      // no image; the session's hooks still run (pause, misses) about ten times a second
+      if (now - this.lastHook < 100) return;
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = this.lastHook = now;
+      this.playfield.driven = false;
+      for (const h of this.hooks) h({ now, dt, time: (now - this.start) / 1000 });
+      return;
+    }
     // frame-rate cap (game setting) and power-saving rate in idle menus
-    const cap = this.inGame ? this.fpsCap : this.idleFps && !this.cosmos.flying ? this.idleFps : this.fpsCap;
+    const menu = this.idleFps && !this.cosmos.flying ? this.idleFps : 0;
+    const cap = this.inGame || !menu ? this.fpsCap : this.fpsCap ? Math.min(this.fpsCap, menu) : menu;
     if (cap > 0 && now - this.lastDrawn < 1000 / cap - 1.5) return;
     this.lastDrawn = now;
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));

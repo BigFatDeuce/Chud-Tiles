@@ -7,7 +7,7 @@ import type { SongPlayer } from '../audio/player';
 import { GameSession, type HudEvent, type SessionState } from '../game/session';
 import { engine } from '../gfx/engine';
 import { go, type GameParams } from '../store/nav';
-import { useSettings } from '../store/settings';
+import { keyName, padName, useSettings } from '../store/settings';
 import { useProfile } from '../store/profile';
 import { playSfx } from '../audio/sfx';
 import { DIFF_COLOR, DIFF_LABEL, fmtPct, fmtScore } from '../components/ui';
@@ -32,6 +32,7 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
   const energyFill = useRef<HTMLElement>(null);
   const fpsEl = useRef<HTMLDivElement>(null);
   const waitEl = useRef<HTMLDivElement>(null);
+  const keysEl = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [state, setState] = useState<SessionState>('intro');
   const [count, setCount] = useState<{ n: number; k: number } | null>(null);
@@ -43,7 +44,8 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
 
   useEffect(() => {
     const st = useSettings.getState();
-    const isYt = game.track.source === 'youtube' && !!game.track.videoId;
+    // a YouTube song downloaded with yt-dlp comes with its sound: it plays as a local file
+    const isYt = game.track.source === 'youtube' && !!game.track.videoId && !game.buffer;
     const host: YtHost | null = isYt ? currentHost() : null;
     if (isYt && !host) {
       go({ id: 'song', track: game.track }, { replace: true });
@@ -101,7 +103,25 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
       if (judgeEl.current) Object.assign(judgeEl.current.style, { left: `${j.x}px`, top: `${j.y}px` });
       if (offEl.current) Object.assign(offEl.current.style, { left: `${j.x}px`, top: `${j.y + 22}px` });
       if (energyEl.current) Object.assign(energyEl.current.style, { left: `${hit.x + half + 22}px`, top: `${top.y}px`, height: `${Math.max(80, hit.y - top.y)}px` });
+      // bindings: under each lane, just below the hit line
+      keysEl.current?.querySelectorAll<HTMLElement>('[data-lane]').forEach((el) => {
+        const p = pf.screenOf(Number(el.dataset.lane), 0);
+        Object.assign(el.style, { left: `${p.x}px`, top: `${p.y + 18}px` });
+      });
     };
+    // bindings shown: the keyboard's or the controller's ("auto": the one used last)
+    const showKeys = st.showKeys;
+    let keysMode: 'keyboard' | 'pad' = showKeys === 'pad' || (showKeys === 'auto' && [...(navigator.getGamepads?.() ?? [])].some((g) => g?.connected)) ? 'pad' : 'keyboard';
+    const setKeysMode = (m: 'keyboard' | 'pad') => {
+      if (m === keysMode || showKeys !== 'auto') return;
+      keysMode = m;
+      if (keysEl.current) keysEl.current.dataset.mode = m;
+    };
+    if (keysEl.current) keysEl.current.dataset.mode = keysMode;
+    const onKey = () => setKeysMode('keyboard');
+    const onPad = () => setKeysMode('pad');
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('gamepadconnected', onPad);
     let comboShown = 0;
     let judgeKey = 0;
     const update = (e: HudEvent) => {
@@ -175,6 +195,7 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
     let raf = 0;
     const tick = () => {
       if (barEl.current) barEl.current.style.width = `${session.progress() * 100}%`;
+      if (showKeys === 'auto' && keysMode === 'keyboard' && [...(navigator.getGamepads?.() ?? [])].some((g) => g?.buttons.some((b) => b.pressed))) setKeysMode('pad');
       if (fpsEl.current) fpsEl.current.textContent = tr('{fps} i/s · pire {ms} ms', { fps: engine.stats.fps.toFixed(0), ms: engine.stats.worstMs.toFixed(1) });
       if (waitEl.current) {
         let msg = '';
@@ -209,6 +230,8 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
       clearTimeout(t2);
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', place);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('gamepadconnected', onPad);
       window.removeEventListener('blur', blur);
       document.removeEventListener('visibilitychange', vis);
       learn();
@@ -297,6 +320,16 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
       )}
       {state === 'failed' && <div className="failed-title" style={{ transform: 'translate(-50%,-50%)' }}>{tr('ÉCHEC')}</div>}
       {settings.showFps && <div className="fps" ref={fpsEl} />}
+      {settings.showKeys !== 'off' && (
+        <div className="lane-keys" ref={keysEl} aria-hidden>
+          {Array.from({ length: lanes }, (_, lane) => (
+            <div key={lane} data-lane={lane} className="lane-key">
+              <span className="k">{(settings.keys[lanes]?.[lane] ?? []).map(keyName).join(' · ') || '—'}</span>
+              <span className="p">{(settings.pad[lanes]?.[lane] ?? []).map(padName).join(' · ') || '—'}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="live-wait" ref={waitEl} style={{ opacity: 0 }} />
       {state === 'playing' && (
         <button className="btn icon ghost pause-btn" aria-label={tr('Pause')} onClick={() => session?.pause()}>

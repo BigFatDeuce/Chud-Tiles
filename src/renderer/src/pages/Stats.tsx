@@ -4,7 +4,7 @@ import { Clock, Flame, History, Music, Target, Trophy, Zap } from 'lucide-react'
 import { ACHIEVEMENTS, levelOf, titleOf, xpToNext, type PlayRecord } from '@core/game/progress';
 import type { DifficultyId } from '@core/chart/types';
 import { useProfile } from '../store/profile';
-import { useLibrary } from '../store/library';
+import { useLibrary, songId } from '../store/library';
 import * as db from '../storage/db';
 import { openTrack } from '../game/actions';
 import { AchIcon, DIFF_COLOR, DIFF_LABEL, RankBadge, Seg, fmtDuration, fmtPct, fmtScore, fmtWhen } from '../components/ui';
@@ -39,7 +39,8 @@ export function Stats() {
     const bestOf = new Map<string, PlayRecord>();
     for (const r of real) {
       if (diff !== 'all' && r.difficulty !== diff) continue;
-      const k = diff === 'all' ? `${r.trackKey}|${r.difficulty}` : r.trackKey;
+      const song = songId({ key: r.trackKey, title: r.title, artist: r.artist });
+      const k = diff === 'all' ? `${song}|${r.difficulty}` : song;
       const cur = bestOf.get(k);
       if (!cur || r.score > cur.score) bestOf.set(k, r);
     }

@@ -10,10 +10,10 @@ import { tr } from '../i18n';
 // analysis is cached per song (invalidated when the file changes or the analysis improves), so a
 // song is analysed once and starts instantly afterwards.
 
-export type LoadStage = 'read' | 'decode' | 'convert' | 'analyse' | 'ready';
+export type LoadStage = 'download' | 'read' | 'decode' | 'convert' | 'analyse' | 'ready';
 export interface LoadProgress {
   stage: LoadStage;
-  /** 0–1 within the stage (analysis only). */
+  /** 0–1 within the stage (download and analysis). */
   p: number;
 }
 

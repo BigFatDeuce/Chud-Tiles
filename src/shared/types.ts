@@ -103,6 +103,23 @@ export interface YtLink {
 }
 
 /** Messages of the YouTube player page (and of the analyser inside YouTube's frame). */
+/** yt-dlp (optional download mode for YouTube songs, desktop only). */
+export interface YtdlpStatus {
+  found: boolean;
+  version: string | null;
+  /** Installed by Chud Tiles (in its profile), or found on the system. */
+  own: boolean;
+  /** Songs downloaded so far, and their size (bytes). */
+  songs: number;
+  bytes: number;
+}
+
+export interface YtDownloaded {
+  path: string;
+  size: number;
+  mtime: number;
+}
+
 export type YtEvent =
   | { type: 'ready' }
   | { type: 'state'; state: number }

@@ -10,14 +10,37 @@ import { tr, type LangSetting } from '../i18n';
 export type Bindings = Record<number, string[][]>;
 export type PadBindings = Record<number, number[][]>;
 
-/** Keyboard: home row, symmetrical around the middle; arrows as an alternative for 4 lanes. */
+/**
+ * Keyboard: the number row, 1 to the number of lanes (physical keys: the same places on AZERTY,
+ * QWERTY, QWERTZ…); arrows as an alternative for 3 and 4 lanes. Every key can be changed.
+ */
 export const DEFAULT_KEYS: Bindings = {
+  3: [['Digit1', 'ArrowLeft'], ['Digit2', 'ArrowDown'], ['Digit3', 'ArrowRight']],
+  4: [['Digit1', 'ArrowLeft'], ['Digit2', 'ArrowDown'], ['Digit3', 'ArrowUp'], ['Digit4', 'ArrowRight']],
+  5: [['Digit1'], ['Digit2'], ['Digit3'], ['Digit4'], ['Digit5']],
+  6: [['Digit1'], ['Digit2'], ['Digit3'], ['Digit4'], ['Digit5'], ['Digit6']],
+  7: [['Digit1'], ['Digit2'], ['Digit3'], ['Digit4'], ['Digit5'], ['Digit6'], ['Digit7']],
+};
+
+/** The defaults of version 1 (home row): a layout still equal to them moves to the number row. */
+const OLD_KEYS: Bindings = {
   3: [['KeyF', 'ArrowLeft'], ['Space', 'ArrowDown'], ['KeyJ', 'ArrowRight']],
   4: [['KeyD', 'ArrowLeft'], ['KeyF', 'ArrowDown'], ['KeyJ', 'ArrowUp'], ['KeyK', 'ArrowRight']],
   5: [['KeyD'], ['KeyF'], ['Space'], ['KeyJ'], ['KeyK']],
   6: [['KeyS'], ['KeyD'], ['KeyF'], ['KeyJ'], ['KeyK'], ['KeyL']],
   7: [['KeyS'], ['KeyD'], ['KeyF'], ['Space'], ['KeyJ'], ['KeyK'], ['KeyL']],
 };
+
+/** Settings saved by an older version → current ones (a layout the player changed is kept). */
+export function migrateSettings(persisted: unknown, version: number): Partial<Settings> {
+  const s = { ...(persisted as Partial<Settings>) };
+  if (version < 2 && s.keys) {
+    const keys: Bindings = { ...s.keys };
+    for (const n of Object.keys(OLD_KEYS).map(Number)) if (JSON.stringify(keys[n]) === JSON.stringify(OLD_KEYS[n])) keys[n] = DEFAULT_KEYS[n]!;
+    s.keys = keys;
+  }
+  return s;
+}
 
 /** Gamepad (standard mapping): D-pad and shoulders on the left, face buttons and shoulders on the right. */
 export const DEFAULT_PAD: PadBindings = {
@@ -51,11 +74,15 @@ export interface Settings {
   /** Visual effects: 1 full, 0.5 reduced, 0 minimal. */
   effects: number;
   showFps: boolean;
+  /** Lane bindings written under the hit line: off, the keyboard's, the controller's, or the last used. */
+  showKeys: 'off' | 'auto' | 'keyboard' | 'pad';
   reducedMotion: boolean;
   autoPause: boolean;
   showOffsets: boolean;
   /** YouTube: analyse live, or wait for a first listen to learn the song. */
   ytMode: 'live' | 'learn-first';
+  /** YouTube songs: the sound downloaded once with yt-dlp (default, desktop), or the official player live. */
+  ytSource: 'player' | 'download';
   /** Extra offset for YouTube songs (+ = the sound of the YouTube player arrives later). */
   ytOffsetMs: number;
   calibrated: boolean;
@@ -81,10 +108,12 @@ export const DEFAULTS: Settings = {
   menuFps30: false,
   effects: 1,
   showFps: false,
+  showKeys: 'off',
   reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   autoPause: true,
   showOffsets: true,
   ytMode: 'live',
+  ytSource: 'download',
   ytOffsetMs: 0,
   calibrated: false,
   lang: 'auto',
@@ -104,7 +133,8 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'chud-tiles-settings',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => migrateSettings(persisted, version) as SettingsStore,
       merge: (persisted, current) => ({ ...current, ...(persisted as Partial<Settings>), keys: { ...DEFAULT_KEYS, ...(persisted as Settings)?.keys }, pad: { ...DEFAULT_PAD, ...(persisted as Settings)?.pad } }),
     },
   ),

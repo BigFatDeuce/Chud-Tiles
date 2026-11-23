@@ -4,7 +4,7 @@ import { FolderPlus, FilePlus2, RefreshCw, Search as SearchIcon, Star, Trash2, X
 import type { TrackRef } from '@shared/types';
 import type { PlayRecord } from '@core/game/progress';
 import { platform } from '../platform';
-import { useLibrary } from '../store/library';
+import { useLibrary, uniqueSongs } from '../store/library';
 import { usePlaylists } from '../store/playlists';
 import { useProfile } from '../store/profile';
 import { openTrack, pickAndOpen } from '../game/actions';
@@ -80,6 +80,11 @@ export function Library() {
     else if (sort === 'plays') out = out.sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0) || (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0));
     else if (sort === 'added') out = out.sort((a, b) => (b.mtime ?? 0) - (a.mtime ?? 0));
     else out = out.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || by((t) => t.title)(a, b));
+    // songs played under several keys are shown once (the most recent or most played copy)
+    if (sort === 'recent' || sort === 'plays') {
+      const played = uniqueSongs(out.filter((t) => t.lastPlayed));
+      out = [...played, ...out.filter((t) => !t.lastPlayed)];
+    }
     return out;
   }, [tracks, q, source, sort]);
 

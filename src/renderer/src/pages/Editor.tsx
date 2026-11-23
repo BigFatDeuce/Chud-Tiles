@@ -82,7 +82,7 @@ export function Editor({ p }: { p: EditorParams }) {
   const [dirty, setDirty] = useState(false);
   const [edited, setEdited] = useState(false);
   const s = useSettings.getState();
-  const isYt = track.source === 'youtube' && !!track.videoId;
+  const isYt = track.source === 'youtube' && !!track.videoId && !p.buffer;
   const offset = (s.audioOffsetMs + (isYt ? s.ytOffsetMs : 0)) / 1000;
   const duration = chart.duration || track.duration || 0;
 

@@ -57,6 +57,20 @@ export function electronPlatform(ct: CtBridge): Platform {
       partition: ct.yt.partition,
       adblock: ct.yt.adblock,
     },
+    ytdlp: {
+      status: () => ct.ytdlp.status(),
+      install: () => ct.ytdlp.install(),
+      prepare: () => ct.ytdlp.prepare(),
+      download: async (id, onProgress) => {
+        const off = ct.ytdlp.onProgress((e) => e.id === id && onProgress(e.p));
+        try {
+          return await ct.ytdlp.download(id);
+        } finally {
+          off();
+        }
+      },
+      clear: () => ct.ytdlp.clear(),
+    },
     window: {
       minimize: () => ct.win.minimize(),
       toggleMaximize: () => ct.win.toggleMaximize(),
@@ -64,6 +78,7 @@ export function electronPlatform(ct: CtBridge): Platform {
       setFullscreen: (on) => ct.win.setFullscreen(on),
       isFullscreen: () => ct.win.isFullscreen(),
       onFullscreen: (cb) => ct.win.onFullscreen(cb),
+      onVisible: (cb) => ct.win.onVisible(cb),
     },
     openExternal: (url) => ct.openExternal(url),
   };

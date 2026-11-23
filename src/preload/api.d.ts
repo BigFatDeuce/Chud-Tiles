@@ -1,4 +1,4 @@
-import type { AdblockStatus, ChudMusicLibrary, LibraryScan, TrackRef, YtItem, YtSearchKind } from '../shared/types';
+import type { AdblockStatus, ChudMusicLibrary, LibraryScan, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind } from '../shared/types';
 
 // The bridge the preload script exposes to the interface as `window.ct` (desktop only).
 
@@ -56,6 +56,16 @@ export interface CtBridge {
       onStatus(cb: (s: AdblockStatus) => void): () => void;
     };
   };
+  /** Optional download mode for YouTube songs (yt-dlp). */
+  ytdlp: {
+    status(): Promise<YtdlpStatus>;
+    install(): Promise<YtdlpStatus>;
+    /** Installs yt-dlp if missing, or updates Chud Tiles' copy (at launch). */
+    prepare(): Promise<void>;
+    download(id: string): Promise<YtDownloaded>;
+    onProgress(cb: (e: { id: string; p: number }) => void): () => void;
+    clear(): Promise<void>;
+  };
   win: {
     minimize(): void;
     toggleMaximize(): void;
@@ -63,6 +73,8 @@ export interface CtBridge {
     setFullscreen(on: boolean): void;
     isFullscreen(): Promise<boolean>;
     onFullscreen(cb: (on: boolean) => void): () => void;
+    /** The window was minimised or hidden (false), or shown again (true). */
+    onVisible(cb: (visible: boolean) => void): () => void;
   };
   openExternal(url: string): void;
   /** Language of the interface, for the texts of the system side (dialogs, errors). */

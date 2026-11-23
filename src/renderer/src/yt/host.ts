@@ -51,6 +51,8 @@ export interface YtHost {
   readonly error: { code: number; message: string } | null;
   /** The analyser inside the player reported in (desktop). */
   readonly analyserOk: boolean | null;
+  /** Preloading before a run: 0–1 of the sound buffered ahead that `prime` waits for. */
+  readonly preload: number;
   mediaAt(perf: number): MediaClock;
   on(cb: (e: YtEvent) => void): () => void;
   onFrames(cb: (b: FramesBatch) => void): () => void;
@@ -59,7 +61,10 @@ export interface YtHost {
    * called first thing in the click that asked for it. Returns why it failed, or null.
    */
   enableCapture?(): Promise<string | null>;
-  /** Loads a video and leaves it paused at `start`, sound ready: `play()` then starts at once. */
+  /**
+   * Loads a video and leaves it paused at `start` with the next ~30 s buffered (12 s of waiting at
+   * most): `play()` then starts at once and the run does not stall.
+   */
   prime(id: string, start?: number): Promise<void>;
   play(): void;
   pause(): void;
@@ -80,6 +85,10 @@ export const YT_ERRORS: Record<number, string> = {
   153: tr('Le lecteur YouTube a refusé la lecture (identification de l’application).'),
 };
 
+/** Seconds of sound buffered before a run may start, and the longest wait for them. */
+const PRELOAD_S = 30;
+const PRELOAD_MAX_WAIT_MS = 12000;
+
 interface WebviewEl extends HTMLElement {
   send(channel: string, ...args: unknown[]): void;
   src: string;
@@ -92,6 +101,11 @@ export abstract class BaseHost {
   duration = 0;
   error: { code: number; message: string } | null = null;
   analyserOk: boolean | null = null;
+  /** Fraction of the video YouTube has buffered (0–1). */
+  protected loaded = 0;
+  private preloadFrom = 0;
+  private preloadGoal = 0;
+  private preloadDone = false;
   protected readonly listeners = new Set<(e: YtEvent) => void>();
   protected readonly frameListeners = new Set<(b: FramesBatch) => void>();
   protected volume = window.ct?.testing ? 0 : 0.8;
@@ -192,12 +206,17 @@ export abstract class BaseHost {
     this.last = null;
     this.off = NaN;
     this.duration = 0;
+    this.loaded = 0;
+    this.preloadDone = false;
+    this.preloadFrom = start;
+    this.preloadGoal = 0;
     const p = new Promise<void>((resolve, reject) => {
       this.command({ op: 'volume', v: 0, muted: true });
       this.command({ op: 'rate', rate: 1 });
       this.command({ op: 'load', id, start, autoplay: true });
-      let phase: 'starting' | 'settling' = 'starting';
+      let phase: 'starting' | 'settling' | 'buffering' = 'starting';
       let settleAt = 0;
+      let bufferAt = 0;
       const t0 = performance.now();
       const done = (err?: Error) => {
         clearInterval(timer);
@@ -209,6 +228,7 @@ export abstract class BaseHost {
           return reject(err);
         }
         this.primed = true;
+        this.preloadDone = true;
         this.command({ op: 'volume', v: Math.round(this.volume * 100), muted: this.volume <= 0 });
         this.command({ op: 'rate', rate: this.rate });
         resolve();
@@ -224,8 +244,12 @@ export abstract class BaseHost {
           this.command({ op: 'pause' });
           this.command({ op: 'seek', t: start });
           settleAt = performance.now();
-        } else if (phase === 'settling' && performance.now() - settleAt > 350 && !m.playing && Math.abs(m.t - start) < 0.15) done();
-        else if (phase === 'settling' && performance.now() - settleAt > 4000) done();
+        } else if (phase === 'settling' && ((performance.now() - settleAt > 350 && !m.playing && Math.abs(m.t - start) < 0.15) || performance.now() - settleAt > 4000)) {
+          // paused at the start: YouTube keeps buffering, the run waits for a good stretch of sound
+          phase = 'buffering';
+          bufferAt = performance.now();
+          this.preloadGoal = this.duration > 1 ? Math.min(PRELOAD_S, Math.max(0, this.duration - start - 0.5)) : PRELOAD_S;
+        } else if (phase === 'buffering' && (this.preload >= 1 || performance.now() - bufferAt > PRELOAD_MAX_WAIT_MS)) done();
         else if (performance.now() - t0 > (this.state === YT_UNSTARTED ? 25000 : 60000)) done(new Error(tr('Le lecteur YouTube ne démarre pas (connexion lente, ou lecture refusée).')));
       }, 30);
     });
@@ -235,6 +259,13 @@ export abstract class BaseHost {
 
   get isPrimed(): boolean {
     return this.primed;
+  }
+
+  get preload(): number {
+    if (this.preloadDone) return 1;
+    if (!(this.preloadGoal > 0) || !(this.duration > 1)) return 0;
+    const ahead = this.loaded * this.duration - this.preloadFrom;
+    return Math.max(0, Math.min(1, ahead / this.preloadGoal));
   }
 
   // ── placement ─────────────────────────────────────────────────────────────────────────────
@@ -319,6 +350,7 @@ export class WebviewHost extends BaseHost implements YtHost {
         return; // frequent: not re-emitted
       case 'time':
         if (m.d > 0) this.duration = m.d;
+        this.loaded = m.loaded || 0;
         break;
       case 'state':
         this.state = m.state;

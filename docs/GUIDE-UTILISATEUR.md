@@ -63,12 +63,12 @@ L'analyse d'un fichier prend environ une seconde par minute de musique, une seul
 
 | Action | Clavier (défaut) | Manette | Souris / tactile |
 |---|---|---|---|
-| Colonnes, 4 colonnes | D F J K (ou ← ↓ ↑ →) | croix et gâchettes à gauche, boutons et gâchettes à droite | toucher la colonne |
-| Colonnes, 3 / 5 / 6 / 7 | F Espace J · D F Espace J K · S D F J K L · S D F Espace J K L | idem | idem |
+| Colonnes, 4 colonnes | 1 2 3 4, rangée du haut du clavier (ou ← ↓ ↑ →) | croix et gâchettes à gauche, boutons et gâchettes à droite | toucher la colonne |
+| Colonnes, 3 / 5 / 6 / 7 | 1 2 3 · 1 à 5 · 1 à 6 · 1 à 7 | idem | idem |
 | Pause | Échap | Start | bouton pause en bas à droite |
-| Recommencer | ² (ou `) | — | menu pause |
+| Recommencer | Retour arrière (⌫) | — | menu pause |
 
-Toutes les touches et tous les boutons se changent dans Réglages › Commandes (une configuration par nombre de colonnes).
+Toutes les touches et tous les boutons se changent dans Réglages › Commandes (une configuration par nombre de colonnes). **Touches sous les pistes** (même onglet) écrit la touche ou le bouton de chaque colonne sous la ligne de frappe pendant la partie : clavier, manette, ou *Auto* (le dernier utilisé).
 
 **Les notes** : simple (taper), **longue** (maintenir jusqu'au bout ; lâcher avant casse le combo), **accord** (plusieurs colonnes en même temps).
 
@@ -84,7 +84,12 @@ Toutes les touches et tous les boutons se changent dans Réglages › Commandes 
 
 ## 6. YouTube Music
 
-La musique est jouée **par le lecteur officiel YouTube**, visible dans un coin pendant la partie. Rien n'est téléchargé, aucun flux n'est extrait.
+Deux façons de jouer un morceau YouTube (Réglages › YouTube › Lecture des morceaux YouTube) :
+
+1. **Télécharger le son** (par défaut, application de bureau) : le son est téléchargé une fois avec [yt-dlp](https://github.com/yt-dlp/yt-dlp), puis joué et analysé comme un fichier : partition complète dès la première partie, pas de publicité, pas de saccade. yt-dlp s'installe tout seul au premier morceau (dans le profil de Chud Tiles). Les morceaux téléchargés se suppriment dans Réglages › YouTube. Attention : télécharger va à l'encontre des conditions d'utilisation de YouTube (usage personnel, à vos risques).
+2. **Lecteur officiel en direct** : la musique est jouée par le lecteur officiel YouTube, visible dans un coin pendant la partie ; rien n'est téléchargé. C'est aussi le secours automatique si un téléchargement échoue. Le lecteur précharge environ 30 s de musique avant la partie pour éviter les saccades.
+
+Avec le lecteur officiel :
 
 - **Première rencontre** d'un morceau : deux choix.
   - **Jouer en direct** (mode A) : les notes sont écrites pendant l'écoute, avec un peu d'avance (prédiction du rythme). Les premières secondes servent à « capter le signal ». Une note prédite que la musique ne confirme pas se dissout : la manquer ne coûte rien.

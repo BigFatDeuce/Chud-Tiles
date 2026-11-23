@@ -27,7 +27,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 
 **Votre musique, intacte**
 - Fichiers locaux : MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA, ALAC. Glisser-déposer, dossiers surveillés, favoris. Les fichiers ne sont jamais copiés ni modifiés.
-- YouTube Music par **le lecteur officiel de YouTube** : recherche, albums, playlists, radio. Rien n'est téléchargé et aucun flux audio n'est extrait ; seules des mesures rythmiques sortent du lecteur.
+- YouTube Music : recherche, albums, playlists, radio. Par défaut, l'application de bureau télécharge une fois le son du morceau avec [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installé au premier usage) et le joue comme un fichier local : partition complète tout de suite, sans publicité ni saccade. L'autre façon est **le lecteur officiel de YouTube**, en direct, sans rien télécharger (c'est aussi le secours si un téléchargement échoue) :
   - *Jouer en direct* : les notes sont prédites un peu en avance pendant que le morceau joue.
   - *Écouter d'abord* : une écoute complète, puis la partition entière.
   - Un morceau joué en direct jusqu'au bout est *appris* : la partie suivante a la partition complète.
@@ -67,9 +67,9 @@ Votre profil, vos records et vos analyses restent sur votre ordinateur (`%APPDAT
 
 | Action | Clavier | Manette | Souris / tactile |
 |---|---|---|---|
-| Pistes (4 pistes) | `D` `F` `J` `K` ou les flèches | croix, boutons, gâchettes | touchez la piste |
+| Pistes (4 pistes) | `1` `2` `3` `4` (rangée des chiffres) ou les flèches | croix, boutons, gâchettes | touchez la piste |
 | Pause | `Échap` | Start | bouton pause |
-| Recommencer | `²` | — | menu pause |
+| Recommencer | `Retour arrière` | — | menu pause |
 
 Jugements : Parfait ±45 ms, Super ±90 ms, Bien ±135 ms. Les règles complètes, les autres nombres de pistes et le dépannage sont dans le [guide du joueur](docs/GUIDE-UTILISATEUR.md).
 
@@ -112,5 +112,5 @@ Electron, React, TypeScript, Three.js, Zustand, Vite et electron-vite, [youtubei
 
 ## À savoir
 
-- Chud Tiles n'est affilié ni à YouTube ni à Google. Les vidéos YouTube sont lues par le lecteur intégré officiel de YouTube et restent soumises à ses conditions. Le bloqueur de publicités, facultatif, peut aller à l'encontre de ces conditions ; il se coupe dans Réglages › YouTube.
+- Chud Tiles n'est affilié ni à YouTube ni à Google. Les vidéos YouTube sont lues par le lecteur intégré officiel de YouTube et restent soumises à ses conditions. Le téléchargement avec yt-dlp (par défaut sur le bureau) et le bloqueur de publicités vont à l'encontre de ces conditions : usage personnel, à vos risques ; les deux se coupent dans Réglages › YouTube.
 - Aucune licence n'a encore été choisie : le code est public en lecture, mais tous droits réservés.

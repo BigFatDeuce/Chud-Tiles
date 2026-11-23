@@ -73,4 +73,5 @@ export function playSfx(name: SfxName, gain = 1): void {
   }
 }
 
-export const playHit = (gain = 1) => playSfx('hit', gain);
+/** Hit sounds sit under the music: about half the level of the interface sounds. */
+export const playHit = (gain = 1) => playSfx('hit', gain * 0.55);

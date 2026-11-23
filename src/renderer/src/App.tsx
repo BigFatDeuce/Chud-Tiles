@@ -31,7 +31,8 @@ function useApplySettings(): void {
     // safe mode (software rendering): low quality, minimal effects, 60 images per second at most
     const safe = platform.safeMode.on;
     engine.fpsCap = safe ? (s.fpsCap === 0 ? 60 : Math.min(60, s.fpsCap)) : s.fpsCap;
-    engine.idleFps = s.menuFps30 || safe ? 30 : 0;
+    // menus never need more than 60 images per second (30 when saving power)
+    engine.idleFps = s.menuFps30 || safe ? 30 : 60;
     engine.cosmos.effects = safe ? 0 : s.effects;
     engine.cosmos.reducedMotion = s.reducedMotion;
     engine.playfield.setTilt(s.tilt);
@@ -106,9 +107,14 @@ export function App() {
     // a little parallax with the pointer in menus
     const move = (e: PointerEvent) => engine.cosmos.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
     window.addEventListener('pointermove', move);
+    // download mode: yt-dlp is installed or updated in the background at launch (not in tests)
+    if (platform.ytdlp && useSettings.getState().ytSource === 'download' && !window.ct?.testing) void platform.ytdlp.prepare();
+    // minimised or hidden window: nothing to draw
+    const offVisible = platform.window?.onVisible?.((v) => (engine.hidden = !v));
     return () => {
       window.removeEventListener('pointermove', move);
       offGpu?.();
+      offVisible?.();
     };
   }, []);
 
