@@ -1,0 +1,44 @@
+name: Bug report · Signaler un bug
+description: Something does not work as expected · Quelque chose ne marche pas comme prévu
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? · Que s'est-il passé ?
+      description: Steps to reproduce, what you expected, what you got · Étapes pour reproduire, ce qui était attendu, ce qui s'est passé
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform · Plateforme
+      options:
+        - Windows (installer · installeur)
+        - Windows (portable)
+        - Linux (AppImage)
+        - Linux (.deb, .rpm, .tar.gz)
+        - Browser · Navigateur
+        - macOS
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Settings › About · Réglages › À propos
+      placeholder: "1.0.0"
+  - type: dropdown
+    id: source
+    attributes:
+      label: Music source · Source de la musique
+      options:
+        - Local file · Fichier local
+        - YouTube Music (live · en direct)
+        - YouTube Music (listen first · écoute d'abord)
+        - Chud Music library · Bibliothèque Chud Music
+        - Not related · Sans rapport
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, file format, anything else · Captures, format du fichier, autre

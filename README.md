@@ -1,48 +1,116 @@
-# Chud Tiles
+<p align="center">
+  <img src="build/icons/png/icon-256.png" width="112" alt="">
+</p>
 
-**FR** — Jeu de rythme dans un univers astronomique : n'importe quel morceau, fichier local ou YouTube Music, devient une partition jouable, générée automatiquement à partir de la musique elle-même.
-**EN** — A rhythm game set in a living universe: any song, a local file or YouTube Music, becomes a playable chart, generated from the music itself.
+<h1 align="center">Chud Tiles</h1>
 
-Interface en français et en anglais (Réglages › Jeu › Langue) · Interface in French and English (Settings › Game › Language).
+<p align="center">
+  <b>A rhythm game that writes its charts from your music.</b><br>
+  Local files or YouTube Music · Windows · Linux · browser
+</p>
+
+<p align="center">
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml"><img src="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  &nbsp;·&nbsp; <a href="README.fr.md">Version française</a>
+</p>
+
+![The bridge, Chud Tiles' home screen](docs/images/home.jpg)
+
+Notes slide down glowing lanes toward a hit line: press the lane when they touch it. Nobody charts the songs by hand. Chud Tiles listens to each song (tempo, beats, kick, snare, cymbals, sustained sounds, choruses) and builds a playable chart for every difficulty.
+
+## Features
+
+**Charts born from the music**
+- Tempo, beats and bars; kick, snare and cymbals spread across the lanes; holds on sustained sounds; chords and streams; denser charts in the choruses.
+- Easy, Normal, Hard, Expert and Custom (density, subdivisions, chords, holds, minimum gap, judgement windows), each rated from 1 to 20, on 3 to 7 lanes.
+- The same song always gives the same chart, and each analysis is cached.
+
+**Your music, untouched**
+- Local files: MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA, ALAC. Drag and drop, watched folders, favourites. Files are never copied or modified.
+- YouTube Music through **YouTube's official player**: search, albums, playlists, radio. Nothing is downloaded and no audio stream is extracted; only rhythm measurements leave the player.
+  - *Play live*: notes are predicted a moment ahead while the song plays.
+  - *Listen first*: one full listen, then the complete chart.
+  - A song played live to the end is *learned*: the next run gets the full chart.
+- Built to sit next to [Chud Music](https://github.com/BigFatDeuce/Chud-Music): the same ad blocker (Ghostery engine, uBlock Origin lists, applied to the player only) and Chud Music's library and playlists, read only.
+
+**Play your way**
+- Keyboard, mouse, touch and gamepad; every binding can be changed, one layout per lane count.
+- Audio and display calibration, separate offsets for YouTube, and a timing curve after each run with a suggested correction.
+- Practice mode (50 to 100 % speed, one section, looped), autoplay preview, and a chart workshop to touch up any generated chart.
+- Progression: XP, 8 crew ranks, 22 achievements, a personal leaderboard per difficulty, full history.
+
+**A living universe**
+- Procedural space scenes drawn with Three.js (WebGL2): nebulae, ringed planets, asteroid belts.
+- The frame rate follows the screen (60, 120, 144, 240 Hz…); taps are judged on their own timestamps, whatever the frame rate.
+- Safe mode (software rendering, minimal effects) for difficult graphics drivers; it turns itself on after repeated crashes.
+- Interface in English and French.
+
+## Screenshots
 
 | | |
 |---|---|
-| Plateformes / Platforms | Windows 10/11 (installeur + portable), Linux (AppImage, .tar.gz ; .deb/.rpm avec un champ `homepage`), navigateur (Chrome, Edge, Firefox, Safari), macOS (configuration prête, à construire sur un Mac) |
-| Musique / Music | fichiers locaux MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA (jamais modifiés) · YouTube Music par le lecteur officiel (aucun téléchargement, aucune extraction de flux) · bibliothèque et listes de Chud Music (lecture seule) |
-| Jeu / Game | 3 à 7 colonnes, notes simples, longues, accords, rafales · Facile, Normal, Difficile, Expert, Personnalisé · clavier, souris, tactile, manette (configurables) |
-| Extras | calibration, entraînement (ralenti, section en boucle), atelier de partitions, aperçu automatique, mode sans échec, cache des analyses, sauvegarde du profil |
+| ![A run in progress](docs/images/gameplay.jpg) | ![Song page with the five difficulties](docs/images/song.jpg) |
+| ![Chart workshop (French interface)](docs/images/editor.jpg) | ![Logbook: level, statistics, achievements (French interface)](docs/images/logbook.jpg) |
+
+## Platforms
+
+| Platform | Package | Notes |
+|---|---|---|
+| Windows 10/11 | `Chud-Tiles-Setup-<version>.exe`, `Chud-Tiles-<version>-Portable.exe` | installer in English or French, or a portable exe. Unsigned: SmartScreen asks once (*More info › Run anyway*). |
+| Linux x64 | `.AppImage`, `.tar.gz`, `.deb`, `.rpm` | AppImage: `chmod +x`, then run it. |
+| Browser | static site (`npm run web:build`) served over HTTPS | Chrome or Edge recommended. Local files, and YouTube from a pasted link (tab audio sharing). |
+| macOS | `npm run dist:mac` on a Mac | configuration ready, not built or tested yet. |
+
+Your profile, records and analyses stay on your computer (`%APPDATA%\Chud Tiles` on Windows, `~/.config/Chud Tiles` on Linux, the browser's storage on the web).
+
+## Default controls
+
+| Action | Keyboard | Gamepad | Mouse / touch |
+|---|---|---|---|
+| Lanes (4 lanes) | `D` `F` `J` `K` or arrows | D-pad, face buttons, shoulders | tap the lane |
+| Pause | `Esc` | Start | pause button |
+| Restart | `` ` `` | — | pause menu |
+
+Judgements: Perfect ±45 ms, Great ±90 ms, Good ±135 ms. Full rules, other lane counts and troubleshooting are in the [player guide](docs/USER-GUIDE.md).
+
+## Building from source
+
+Node 24 or newer.
+
+```sh
+npm install
+npm run dev        # desktop app (Electron)
+npm run web:dev    # browser version
+```
+
+| Command | Does |
+|---|---|
+| `npm run typecheck` | TypeScript check (main, preload, interface) |
+| `npm run test:unit` | analysis, chart generation, live prediction, judgement, progression, translations (Node, no app) |
+| `npm run test:e2e` | the real app driven by Playwright, muted and invisible (`-- --online` adds YouTube) |
+| `npm run test:web` | the browser version, offline |
+| `npm run test:i18n` | interface texts missing an English translation |
+| `npm run dist:win` | Windows installer and portable exe in `dist/` |
+| `npm run dist:linux` | AppImage, .tar.gz, .deb, .rpm (on Linux; from Windows, run `scripts/linux-dist.sh` in WSL) |
+| `npm run dist:mac` | .dmg and .zip (on a Mac) |
+| `npm run web:build` | static site in `dist-web/` |
+
+**FFmpeg (optional).** Rare formats (WMA, ALAC, some AIFF) are decoded by FFmpeg. The desktop packages ship Chud Music's LGPL, audio-only FFmpeg build: `scripts/prepare-dist.mjs` copies it from a Chud Music checkout that has its `build/vendor` folder (set `CHUD_MUSIC_DIR`, or write the path in a local `.chud-music-dir` file). Without it, packages are built without FFmpeg and the other formats still work.
 
 ## Documentation
 
-| | Français | English |
+| | English | Français |
 |---|---|---|
-| Guide du joueur / Player guide | [docs/GUIDE-UTILISATEUR.md](docs/GUIDE-UTILISATEUR.md) | [docs/USER-GUIDE.md](docs/USER-GUIDE.md) |
-| Documentation technique | [docs/DOC-TECHNIQUE.md](docs/DOC-TECHNIQUE.md) | — |
-| Étude préalable et choix | [docs/ETUDE-ARCHITECTURE.md](docs/ETUDE-ARCHITECTURE.md) | — |
-| Bilan : ce qui marche, limites | [docs/BILAN.md](docs/BILAN.md) | — |
+| Player guide | [docs/USER-GUIDE.md](docs/USER-GUIDE.md) | [docs/GUIDE-UTILISATEUR.md](docs/GUIDE-UTILISATEUR.md) |
+| Technical documentation | — | [docs/DOC-TECHNIQUE.md](docs/DOC-TECHNIQUE.md) |
+| Architecture study | — | [docs/ETUDE-ARCHITECTURE.md](docs/ETUDE-ARCHITECTURE.md) |
+| Status: what works, known limits | — | [docs/BILAN.md](docs/BILAN.md) |
 
-## Développement / Development
+## Built with
 
-Node 24 ou plus récent / Node 24 or newer.
+Electron, React, TypeScript, Three.js, Zustand, Vite and electron-vite, [youtubei.js](https://github.com/LuanRT/YouTube.js), [Ghostery's ad blocker](https://github.com/ghostery/adblocker), FFmpeg (LGPL), the Oxanium and Space Grotesk fonts (SIL OFL) and Lucide icons. Packaging writes the full list of third-party licences to `THIRD-PARTY-NOTICES.txt`, shipped with the app.
 
-```powershell
-npm install
-npm run dev            # application de bureau / desktop app (Electron)
-npm run web:dev        # version navigateur / browser version
-```
+## Notes
 
-| Commande / Command | Effet / Does |
-|---|---|
-| `npm run typecheck` | vérification TypeScript (main, preload, interface) |
-| `npm run test:unit` | analyse, génération, temps réel, jugement, progression, traductions (Node, sans application) |
-| `npm run test:e2e` | l'application réelle pilotée par Playwright, muette et invisible (`-- --online` ajoute YouTube) |
-| `npm run test:web` | la version navigateur, hors ligne (`test:web-online` : YouTube par capture d'onglet) |
-| `npm run test:i18n` | textes de l'interface sans traduction anglaise |
-| `npm run make:icons` | toutes les icônes depuis `build/logo.svg` |
-| `npm run dist:win` | `dist/Chud-Tiles-Setup-<v>.exe` + `dist/Chud-Tiles-<v>-Portable.exe` |
-| `npm run dist:linux` | AppImage, .tar.gz (sous Linux ; depuis Windows : `scripts/linux-dist.sh` dans WSL) |
-| `npm run dist:mac` | .dmg + .zip (sur un Mac) |
-| `npm run web:build` | site statique dans `dist-web/` (à servir en HTTPS ou depuis `localhost`) |
-
-Le dossier de Chud Music n'est jamais modifié : son FFmpeg LGPL est **copié** à l'empaquetage (`scripts/prepare-dist.mjs`, variable `CHUD_MUSIC_DIR` pour un autre emplacement).
-Chud Music's folder is never changed: its LGPL FFmpeg is **copied** when packaging.
+- Chud Tiles is not affiliated with YouTube or Google. YouTube videos are played by YouTube's official embedded player and remain subject to YouTube's terms. The optional ad blocker may go against those terms; it can be switched off in Settings › YouTube.
+- No licence has been chosen yet: the code is public to read, but all rights are reserved.
