@@ -14,3 +14,9 @@ scripts/.i18n-report.txt
 
 # trailer (its music is not ours to publish)
 trailer/
+
+# Local assistant notes, never published
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md

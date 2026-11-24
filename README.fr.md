@@ -136,4 +136,4 @@ Electron, React, TypeScript, Three.js, Zustand, Vite et electron-vite, [youtubei
 ## À savoir
 
 - Chud Tiles n'est affilié ni à YouTube ni à Google. Les vidéos YouTube sont lues par le lecteur intégré officiel de YouTube et restent soumises à ses conditions. Le téléchargement avec yt-dlp (par défaut sur le bureau) et le bloqueur de publicités vont à l'encontre de ces conditions : usage personnel, à vos risques ; les deux se coupent dans Réglages › YouTube.
-- Aucune licence n'a encore été choisie : le code est public en lecture, mais tous droits réservés.
+- © 2026 BigFatDeuce. Le code est un logiciel libre sous [GPL-3.0 ou ultérieure](LICENSE) : vous pouvez l'utiliser, l'étudier, le partager et le modifier, et les versions que vous distribuez restent sous la même licence. Les composants tiers gardent leur propre licence.
