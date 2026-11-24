@@ -53,7 +53,9 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
   send({ status: 'checking' });
   try {
     if (selfUpdating()) {
-      const { autoUpdater } = await import('electron-updater');
+      // a CommonJS package: from ES modules its exports sit on `default`
+      const mod = (await import('electron-updater')) as typeof import('electron-updater') & { default?: typeof import('electron-updater') };
+      const autoUpdater = mod.default?.autoUpdater ?? mod.autoUpdater;
       installer = autoUpdater;
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
