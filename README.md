@@ -22,22 +22,13 @@
 </p>
 
 <p align="center">
-  <a href= + REL + ><b>⬇ Download for Windows or Linux</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><b>⬇ Download for Windows or Linux</b></a> &nbsp;·&nbsp;
   <a href="https://chud-tiles.holy-c.men"><b>▶ Play in your browser</b></a>
 </p>
 
 ![The bridge, Chud Tiles' home screen](docs/images/home.jpg)
 
 Notes slide down glowing lanes toward a hit line: press the lane when they touch it. Nobody charts the songs by hand. Chud Tiles listens to each song (tempo, beats, kick, snare, cymbals, sustained sounds, choruses) and builds a playable chart for every difficulty.
-
-## New in 1.1
-
-- **Hit them dead centre.** Bigger tiles, and a narrow centre band on each one: a note hit dead on (±20 ms) scores far more, and a streak of them adds up to +100 %.
-- **Juice.** Combo tiers from 25 to 400 set the lanes on fire, with shock waves, beams and a flash when a combo breaks.
-- **Online leaderboard** on [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men): a board per song and difficulty, the 100 latest scores, a name chosen before or after the run.
-- **Updates** checked at launch: the Windows installer and the AppImage update themselves.
-- Music volume before the run and in the pause menu; YouTube songs play a normal run (full chart) by default.
-- **Shared charts** (1.1.2): a YouTube song learned or downloaded once is ready for everyone, in the browser too. Only the rhythm analysis is shared, never the audio.
 
 ## Features
 
@@ -48,24 +39,33 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 
 **Your music, untouched**
 - Local files: MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA, ALAC. Drag and drop, watched folders, favourites. Files are never copied or modified.
-- YouTube Music: search, albums, playlists, radio. By default the desktop app downloads the song's sound once with [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installed on first use) and plays it like a local file: full chart at once, no ads, no stutter. The other way is **YouTube's official player**, live, with nothing downloaded (also the fallback when a download fails):
+- YouTube Music: search, albums, playlists, radio. The desktop app downloads the song's sound once with [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installed on first use) and plays it like a local file: full chart at once, no ads, no stutter. The other way is **YouTube's official player**, with nothing downloaded (also the fallback when a download fails):
   - *Play live*: notes are predicted a moment ahead while the song plays.
   - *Listen first*: one full listen, then the complete chart.
   - A song played live to the end is *learned*: the next run gets the full chart.
+- **Shared charts**: a YouTube song learned or downloaded by one player is ready, with its full chart, for everyone else, browser version included. Only the rhythm analysis is shared (beats, attacks, sections), never the audio.
 - Built to sit next to [Chud Music](https://github.com/BigFatDeuce/Chud-Music): the same ad blocker (Ghostery engine, uBlock Origin lists, applied to the player only) and Chud Music's library and playlists, read only.
+
+**Scoring**
+- Each tile has a narrow centre band: a note hit dead on (±20 ms) is worth half as much again, and a streak of dead-on hits adds up to +100 %.
+- A combo multiplier from ×2 at 25 notes to ×8 at 400; each tier sets the lanes on fire, with shock waves, beams and a flash when the combo breaks.
+- Ranks from D to SS, full combos, and a timing curve after each run with a suggested correction.
 
 **Play your way**
 - Keyboard, mouse, touch and gamepad; every binding can be changed, one layout per lane count.
-- Audio and display calibration, separate offsets for YouTube, and a timing curve after each run with a suggested correction.
+- Audio and display calibration, a separate offset for YouTube, music volume before the run and in the pause menu.
 - Practice mode (50 to 100 % speed, one section, looped), autoplay preview, and a chart workshop to touch up any generated chart.
 - Progression: XP, 8 crew ranks, 22 achievements, a personal leaderboard per difficulty, full history.
-- **Online leaderboard**: after a finished song (Easy to Expert), pick a name and publish your score. Each song has its board per difficulty and lane count, and the *Leaderboard* tab lists the 100 latest scores. Nothing is sent unless you publish; it can be switched off in Settings › Game.
+
+**Online leaderboard**
+- After a finished song (Easy to Expert), pick a name and publish your score on [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men). Each song has its board per difficulty and lane count, and the *Leaderboard* tab lists the 100 latest scores.
+- Nothing is sent unless you publish (a name and the score). The leaderboard and shared charts can be switched off in Settings › Game.
 
 **A living universe**
 - Procedural space scenes drawn with Three.js (WebGL2): nebulae, ringed planets, asteroid belts.
 - The frame rate follows the screen (60, 120, 144, 240 Hz…); taps are judged on their own timestamps, whatever the frame rate.
 - Safe mode (software rendering, minimal effects) for difficult graphics drivers; it turns itself on after repeated crashes.
-- Interface in English and French.
+- Interface in English and French. The Windows installer and the AppImage update themselves.
 
 ## Screenshots
 

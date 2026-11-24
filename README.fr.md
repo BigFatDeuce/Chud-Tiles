@@ -22,22 +22,13 @@
 </p>
 
 <p align="center">
-  <a href= + REL + ><b>⬇ Télécharger pour Windows ou Linux</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><b>⬇ Télécharger pour Windows ou Linux</b></a> &nbsp;·&nbsp;
   <a href="https://chud-tiles.holy-c.men"><b>▶ Jouer dans le navigateur</b></a>
 </p>
 
 ![Le pont, l'écran d'accueil de Chud Tiles](docs/images/accueil.jpg)
 
 Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez sur la piste quand elles la touchent. Personne n'écrit les partitions à la main. Chud Tiles écoute chaque morceau (tempo, temps, grosse caisse, caisse claire, cymbales, sons tenus, refrains) et en tire une partition jouable pour chaque difficulté.
-
-## Nouveau dans la 1.1
-
-- **Visez le centre.** Des tuiles plus grandes, avec une bande étroite au milieu : une note frappée pile au centre (±20 ms) rapporte bien plus, et une série de frappes pile ajoute jusqu'à +100 %.
-- **Du spectacle.** Des paliers de combo de 25 à 400 embrasent les pistes : ondes de choc, faisceaux, et un éclair quand le combo casse.
-- **Classement en ligne** sur [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men) : un tableau par morceau et difficulté, les 100 derniers scores, un pseudo choisi avant ou après la partie.
-- **Mises à jour** cherchées au lancement : l'installeur Windows et l'AppImage se mettent à jour seuls.
-- Volume de la musique avant la partie et dans le menu pause ; les morceaux YouTube se jouent en partie normale (partition complète) par défaut.
-- **Partitions partagées** (1.1.2) : un morceau YouTube appris ou téléchargé une fois est prêt pour tout le monde, navigateur compris. Seule l'analyse du rythme est partagée, jamais le son.
 
 ## Ce qu'il sait faire
 
@@ -48,24 +39,33 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 
 **Votre musique, intacte**
 - Fichiers locaux : MP3, FLAC, WAV, OGG, OPUS, AAC, M4A, AIFF, WMA, ALAC. Glisser-déposer, dossiers surveillés, favoris. Les fichiers ne sont jamais copiés ni modifiés.
-- YouTube Music : recherche, albums, playlists, radio. Par défaut, l'application de bureau télécharge une fois le son du morceau avec [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installé au premier usage) et le joue comme un fichier local : partition complète tout de suite, sans publicité ni saccade. L'autre façon est **le lecteur officiel de YouTube**, en direct, sans rien télécharger (c'est aussi le secours si un téléchargement échoue) :
+- YouTube Music : recherche, albums, playlists, radio. L'application de bureau télécharge une fois le son du morceau avec [yt-dlp](https://github.com/yt-dlp/yt-dlp) (installé au premier usage) et le joue comme un fichier local : partition complète tout de suite, sans publicité ni saccade. L'autre façon est **le lecteur officiel de YouTube**, sans rien télécharger (c'est aussi le secours si un téléchargement échoue) :
   - *Jouer en direct* : les notes sont prédites un peu en avance pendant que le morceau joue.
   - *Écouter d'abord* : une écoute complète, puis la partition entière.
   - Un morceau joué en direct jusqu'au bout est *appris* : la partie suivante a la partition complète.
+- **Partitions partagées** : un morceau YouTube appris ou téléchargé par un joueur est prêt, avec sa partition complète, pour tous les autres, version navigateur comprise. Seule l'analyse du rythme est partagée (temps, attaques, sections), jamais le son.
 - Pensé pour cohabiter avec [Chud Music](https://github.com/BigFatDeuce/Chud-Music) : le même bloqueur de publicités (moteur Ghostery, listes uBlock Origin, appliqué au seul lecteur) et la bibliothèque et les listes de Chud Music, en lecture seule.
+
+**Le score**
+- Chaque tuile a une bande étroite en son centre : une note frappée pile (±20 ms) vaut moitié plus, et une série de frappes pile ajoute jusqu'à +100 %.
+- Un multiplicateur de combo de ×2 à 25 notes jusqu'à ×8 à 400 ; chaque palier embrase les pistes, avec ondes de choc, faisceaux et un éclair quand le combo casse.
+- Rangs de D à SS, combos complets, et une courbe de précision après chaque partie avec une correction proposée.
 
 **Jouez comme vous voulez**
 - Clavier, souris, tactile et manette ; chaque touche se change, une disposition par nombre de pistes.
-- Calibration du son et de l'image, décalage propre à YouTube, et courbe de précision après chaque partie avec une correction proposée.
+- Calibration du son et de l'image, décalage propre à YouTube, volume de la musique avant la partie et dans le menu pause.
 - Entraînement (vitesse de 50 à 100 %, une section, en boucle), aperçu automatique, et un atelier pour retoucher n'importe quelle partition générée.
 - Progression : XP, 8 grades d'équipage, 22 succès, classement personnel par difficulté, historique complet.
-- **Classement en ligne** : après un morceau terminé (Facile à Expert), choisissez un pseudo et publiez votre score. Chaque morceau a son classement par difficulté et nombre de colonnes, et l'onglet *Classement* liste les 100 derniers scores. Rien n'est envoyé sans publication ; désactivable dans Réglages › Jeu.
+
+**Classement en ligne**
+- Après un morceau terminé (Facile à Expert), choisissez un pseudo et publiez votre score sur [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men). Chaque morceau a son classement par difficulté et nombre de pistes, et l'onglet *Classement* liste les 100 derniers scores.
+- Rien n'est envoyé sans publication (un pseudo et le score). Le classement et les partitions partagées se coupent dans Réglages › Jeu.
 
 **Un univers vivant**
 - Scènes spatiales procédurales dessinées avec Three.js (WebGL2) : nébuleuses, planètes à anneaux, ceintures d'astéroïdes.
 - Les images par seconde suivent l'écran (60, 120, 144, 240 Hz…) ; les frappes sont jugées sur leur propre horodatage, quelle que soit la cadence.
 - Mode sans échec (rendu logiciel, effets minimaux) pour les pilotes graphiques capricieux ; il s'active seul après des plantages répétés.
-- Interface en français et en anglais.
+- Interface en français et en anglais. L'installeur Windows et l'AppImage se mettent à jour seuls.
 
 ## Captures
 
