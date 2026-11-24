@@ -11,6 +11,7 @@ import { initYouTubeSession, YT_PARTITION, YT_PLAYER_URL, ytBlocked } from './ch
 import { adblockNeeded, adblockStatus, checkLists, initAdblock, setAdblockEnabled } from './chud/adblock';
 import { say, setLang } from './i18n';
 import * as ytdlp from './ytdlp';
+import { checkForUpdates, installNow, setUpdateWindow } from './updater';
 import { initSafeMode, interfaceLost, restart, safe, startedFine, watchGpu } from './safe-mode';
 
 // Chud Tiles' desktop shell (Windows, Linux, macOS). The game itself is the page (src/renderer);
@@ -132,6 +133,7 @@ function createWindow(): BrowserWindow {
   const visible = (v: boolean) => () => {
     if (!win.isDestroyed()) win.webContents.send('win:visible', v);
   };
+  setUpdateWindow(win);
   win.on('minimize', visible(false));
   win.on('hide', visible(false));
   win.on('restore', visible(true));
@@ -237,6 +239,10 @@ function registerIpc(getWin: () => BrowserWindow | null, send: (channel: string,
     return ytdlp.download(v, (p) => send('ytdlp:progress', { id: v, p }));
   });
   ipcMain.handle('ytdlp:clear', () => ytdlp.clear());
+
+  // updates (GitHub releases), checked at launch when Settings › About allows it
+  ipcMain.handle('update:check', () => checkForUpdates());
+  ipcMain.on('update:install', () => installNow());
 
   // ad blocker
   ipcMain.handle('adblock:status', () => adblockStatus());

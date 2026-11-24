@@ -7,6 +7,7 @@
 <p align="center">
   <b>Un jeu de rythme qui écrit ses partitions à partir de votre musique.</b><br>
   Fichiers locaux ou YouTube Music · Windows · Linux · navigateur
+  <br><b><a href="https://chud-tiles.holy-c.men">Jouer dans le navigateur : chud-tiles.holy-c.men</a></b>
 </p>
 
 <p align="center">
@@ -38,6 +39,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 - Calibration du son et de l'image, décalage propre à YouTube, et courbe de précision après chaque partie avec une correction proposée.
 - Entraînement (vitesse de 50 à 100 %, une section, en boucle), aperçu automatique, et un atelier pour retoucher n'importe quelle partition générée.
 - Progression : XP, 8 grades d'équipage, 22 succès, classement personnel par difficulté, historique complet.
+- **Classement en ligne** : après un morceau terminé (Facile à Expert), choisissez un pseudo et publiez votre score. Chaque morceau a son classement par difficulté et nombre de colonnes, et l'onglet *Classement* liste les 100 derniers scores. Rien n'est envoyé sans publication ; désactivable dans Réglages › Jeu.
 
 **Un univers vivant**
 - Scènes spatiales procédurales dessinées avec Three.js (WebGL2) : nébuleuses, planètes à anneaux, ceintures d'astéroïdes.
@@ -58,7 +60,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 |---|---|---|
 | Windows 10/11 | `Chud-Tiles-Setup-<version>.exe`, `Chud-Tiles-<version>-Portable.exe` | installeur en français ou en anglais, ou exécutable portable. Non signé : SmartScreen demande une fois (*Informations complémentaires › Exécuter quand même*). |
 | Linux x64 | `.AppImage`, `.tar.gz`, `.deb`, `.rpm` | AppImage : `chmod +x`, puis lancez-la. |
-| Navigateur | site statique (`npm run web:build`) servi en HTTPS | Chrome ou Edge recommandés. Fichiers locaux, et YouTube à partir d'un lien collé (partage du son de l'onglet). |
+| Navigateur | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), ou votre propre site statique (`npm run web:build`) servi en HTTPS | Chrome ou Edge recommandés. Fichiers locaux, et YouTube à partir d'un lien collé (partage du son de l'onglet). |
 | macOS | `npm run dist:mac` sur un Mac | configuration prête, pas encore construite ni testée. |
 
 Votre profil, vos records et vos analyses restent sur votre ordinateur (`%APPDATA%\Chud Tiles` sous Windows, `~/.config/Chud Tiles` sous Linux, le stockage du navigateur sur le web).
@@ -71,7 +73,7 @@ Votre profil, vos records et vos analyses restent sur votre ordinateur (`%APPDAT
 | Pause | `Échap` | Start | bouton pause |
 | Recommencer | `Retour arrière` | — | menu pause |
 
-Jugements : Parfait ±45 ms, Super ±90 ms, Bien ±135 ms. Les règles complètes, les autres nombres de pistes et le dépannage sont dans le [guide du joueur](docs/GUIDE-UTILISATEUR.md).
+Jugements : Pile ±20 ms (frapper la ligne centrale de la tuile : moitié plus de points, et un bonus de série), Parfait ±45 ms, Super ±90 ms, Bien ±135 ms. Les règles complètes, les autres nombres de pistes et le dépannage sont dans le [guide du joueur](docs/GUIDE-UTILISATEUR.md).
 
 ## Construire depuis les sources
 
@@ -94,6 +96,7 @@ npm run web:dev    # version navigateur
 | `npm run dist:linux` | AppImage, .tar.gz, .deb, .rpm (sous Linux ; depuis Windows, `scripts/linux-dist.sh` dans WSL) |
 | `npm run dist:mac` | .dmg et .zip (sur un Mac) |
 | `npm run web:build` | site statique dans `dist-web/` |
+| `npm run site:deploy` | construit le site et le déploie avec l'API du classement sur Cloudflare (`server/` : Worker + D1 ; demande `wrangler login`) |
 
 **FFmpeg (facultatif).** Les formats rares (WMA, ALAC, certains AIFF) sont décodés par FFmpeg. Les paquets de bureau embarquent la version LGPL, audio seulement, de Chud Music : `scripts/prepare-dist.mjs` la copie depuis une copie de Chud Music qui contient son dossier `build/vendor` (variable `CHUD_MUSIC_DIR`, ou chemin écrit dans un fichier local `.chud-music-dir`). Sans elle, les paquets sont construits sans FFmpeg et les autres formats fonctionnent.
 

@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, Compass, Library, ListMusic, Maximize2, Minus, Radio, Settings, ShieldAlert, Square, X } from 'lucide-react';
+import { BarChart3, Trophy, Compass, Library, ListMusic, Maximize2, Minus, Radio, Settings, ShieldAlert, Square, X } from 'lucide-react';
 import { platform } from '../platform';
 import { useNav, go, type Page } from '../store/nav';
 import { useProfile } from '../store/profile';
+import { useSettings } from '../store/settings';
 import { levelOf } from '@core/game/progress';
 import { engine } from '../gfx/engine';
 import { playSfx } from '../audio/sfx';
@@ -15,6 +16,7 @@ const ITEMS: { id: Page['id']; label: string; icon: ReactNode; when?: () => bool
   { id: 'search', label: tr('YouTube'), icon: <Radio size={21} /> },
   { id: 'playlists', label: tr('Listes'), icon: <ListMusic size={21} /> },
   { id: 'stats', label: tr('Carnet'), icon: <BarChart3 size={21} /> },
+  { id: 'leaderboard', label: tr('Classement'), icon: <Trophy size={21} /> },
 ];
 
 export function Titlebar() {
@@ -57,13 +59,14 @@ export function Titlebar() {
 
 export function Nav() {
   const page = useNav((s) => s.page);
+  const online = useSettings((s) => s.online);
   const active = page.id === 'song' || page.id === 'results' ? 'library' : page.id === 'calibration' ? 'settings' : page.id;
   return (
     <nav className="nav" aria-label={tr('Navigation')}>
       <div className="logo">
         <Logo size={42} />
       </div>
-      {ITEMS.map((it) => (
+      {ITEMS.filter((it) => online || it.id !== 'leaderboard').map((it) => (
         <button
           key={it.id}
           className={`nav-item ${active === it.id ? 'active' : ''}`}

@@ -179,6 +179,12 @@ export class YouTubePlayer implements SongPlayer {
     }, 60);
   }
 
+  /** Volume 0–1 (music × master), applied at once unless a fade is running. */
+  setVolume(v: number): void {
+    this.volume = v;
+    if (this.fading === undefined) this.host.setVolume(v);
+  }
+
   private cancelFade(): void {
     if (this.fading === undefined) return;
     clearInterval(this.fading);

@@ -18,7 +18,8 @@ export const NOTE_BROKEN = 5;
 
 const MAX_LANES = 7;
 const TRACK_LEN = 10;
-const TILE = 0.34;
+// tiles: tall enough to aim at their centre line, which is the exact time of the note
+const TILE = 0.6;
 
 /** Lane colours, symmetrical from the edges inward: outer violet, then cyan, magenta, gold centre. */
 export function laneColors(n: number): THREE.Color[] {
@@ -31,6 +32,10 @@ export function laneColors(n: number): THREE.Color[] {
   return out;
 }
 
+/** Combo tiers: violet, magenta, orange, gold, white-hot. */
+const HEAT_COLORS = ['#9d7bff', '#ff5fd0', '#ff9a3c', '#ffd25c', '#fff1c9'].map((c) => new THREE.Color(c));
+export const heatColor = (tier: number) => HEAT_COLORS[Math.max(0, Math.min(HEAT_COLORS.length - 1, tier - 1))];
+
 const COMMON = /* glsl */ `
 uniform float uTime;        // song time (s)
 uniform float uApproach;    // seconds a note is visible
@@ -38,6 +43,7 @@ uniform float uLaneW;
 uniform float uLanes;
 uniform float uIntro;       // 0 → 1 when the track unfolds
 uniform vec3 uLaneColor[${MAX_LANES}];
+uniform float uCentre;      // half-height of the dead-centre band at the hit line (world units)
 float laneX(float lane) { return (lane - (uLanes - 1.0) * 0.5) * uLaneW; }
 float yOf(float t) { return (t - uTime) / uApproach * ${TRACK_LEN.toFixed(1)}; }
 `;
@@ -65,6 +71,12 @@ uniform float uDown[24];
 uniform float uPulse;
 uniform float uEnergy;
 uniform float uDanger;
+uniform float uHeat;        // combo heat 0…1
+uniform vec3 uHeatC;
+uniform float uShock;       // seconds since the last combo milestone
+uniform vec3 uShockC;
+uniform float uBreak;       // seconds since the combo broke
+uniform float uBeam[${MAX_LANES}];
 void main() {
   float half_ = uLanes * uLaneW * 0.5;
   float x = vP.x, y = vP.y;
@@ -88,28 +100,50 @@ void main() {
   float px = fwidth(lanef);
   float line = (1.0 - smoothstep(0.0, px * 1.5, min(lx, 1.0 - lx))) * inside;
   float edge = exp(-abs(abs(x) - half_) * 9.0) * step(abs(x), half_ + 0.4);
-  c += vec3(0.35, 0.4, 0.9) * line * 0.22 * fadeFar + vec3(0.45, 0.55, 1.0) * edge * (0.55 + uPulse * 0.5) * fadeFar * (0.6 + 0.4 * (1.0 - far));
-  a += line * 0.2 * fadeFar + edge * 0.5 * fadeFar;
+  // combo heat: the edges take the tier's colour, flicker and burn
+  vec3 edgeC = mix(vec3(0.45, 0.55, 1.0), uHeatC, smoothstep(0.0, 0.3, uHeat));
+  float flick = 1.0 + uHeat * 0.45 * sin(y * 2.6 - uTime * 11.0 + sign(x) * 1.7);
+  c += vec3(0.35, 0.4, 0.9) * line * (0.22 + uHeat * 0.18) * fadeFar + edgeC * edge * (0.55 + uPulse * 0.5 + uHeat * 1.1) * flick * fadeFar * (0.6 + 0.4 * (1.0 - far));
+  a += line * 0.2 * fadeFar + edge * (0.5 + uHeat * 0.3) * fadeFar;
+  if (uHeat > 0.01) {
+    float outer = abs(x) - half_;
+    float tongue = 0.5 + 0.5 * sin(y * 4.3 - uTime * 15.0 + sin(y * 1.7 + uTime * 3.1) * 2.2);
+    float fire = exp(-max(outer, 0.0) * mix(9.0, 3.5, uHeat)) * step(0.0, outer) * tongue * uHeat * fadeFar * (1.0 - far * 0.6);
+    c += mix(edgeC, vec3(1.0, 0.95, 0.8), tongue * 0.3) * fire * 0.9;
+    a += fire * 0.5;
+  }
   int li = int(lane);
   vec3 lc = vec3(1.0);
-  float press = 0.0, flash = 0.0, hold = 0.0;
+  float press = 0.0, flash = 0.0, hold = 0.0, beam = 9.0;
   vec3 fc = vec3(1.0);
   for (int i = 0; i < ${MAX_LANES}; i++) {
-    if (i == li) { lc = uLaneColor[i]; press = uPress[i]; flash = uFlash[i]; fc = uFlashC[i]; hold = uHold[i]; }
+    if (i == li) { lc = uLaneColor[i]; press = uPress[i]; flash = uFlash[i]; fc = uFlashC[i]; hold = uHold[i]; beam = uBeam[i]; }
   }
   if (inside > 0.5 && y > -1.2) {
     // pressed lane: a column of light rising from the receptor
     float col = (press * 0.5 + hold * 0.4) * exp(-max(y, 0.0) * 0.35) * smoothstep(0.0, 0.18, lx) * smoothstep(1.0, 0.82, lx);
     c += lc * col * 0.55; a += col * 0.4;
-    // receptor: a rounded frame on the hit line
+    // dead centre: a beam of light shoots up the lane
+    if (beam < 0.4 && y > -0.1) {
+      float k = 1.0 - beam / 0.4;
+      float bw = exp(-pow((lx - 0.5) * mix(9.0, 4.0, k), 2.0));
+      float bc = bw * k * k * exp(-max(y, 0.0) * mix(0.5, 0.12, k));
+      c += vec3(1.0, 0.92, 0.72) * bc * 1.5; a += bc * 0.7;
+    }
+    // receptor: a rounded frame on the hit line, as tall as a tile
     vec2 q = vec2((lx - 0.5) * uLaneW, y);
-    vec2 b = vec2(uLaneW * 0.42, 0.2);
+    vec2 b = vec2(uLaneW * 0.44, ${(TILE / 2).toFixed(3)});
     vec2 d = abs(q) - b + 0.08;
     float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - 0.08;
     float frame = exp(-abs(sd) * 38.0);
     float fill = smoothstep(0.01, -0.02, sd);
     c += lc * (frame * (0.55 + press * 0.9 + uPulse * 0.25) + fill * (0.06 + press * 0.35 + hold * 0.3));
     a += frame * 0.6 + fill * (0.2 + press * 0.3);
+    // the dead-centre band, and notches on both sides of the hit line: aim here
+    float band = (1.0 - smoothstep(uCentre * 0.7, uCentre, abs(y))) * fill;
+    float notch = exp(-pow(y / 0.035, 2.0)) * (exp(-lx * 26.0) + exp(-(1.0 - lx) * 26.0));
+    c += vec3(1.0, 0.85, 0.55) * (band * (0.1 + uPulse * 0.08) + notch * 1.1);
+    a += band * 0.12 + notch * 0.7;
     // hit flash: a ring expanding out of the receptor
     float age = flash;
     if (age < 0.45) {
@@ -121,10 +155,25 @@ void main() {
       a += ring + max(core, 0.0);
     }
   }
-  // hit line
+  // hit line: a soft glow and a sharp core, warmer with the combo heat
   float hl = exp(-abs(y) * 26.0) * inside;
-  c += mix(vec3(0.6, 0.7, 1.0), vec3(1.0, 0.85, 0.6), uPulse * 0.6) * hl * (0.9 + uPulse * 0.8 + uEnergy * 0.3);
-  a += hl * 0.7;
+  float hcore = exp(-abs(y) * 110.0) * inside;
+  vec3 hcol = mix(mix(vec3(0.6, 0.7, 1.0), vec3(1.0, 0.85, 0.6), uPulse * 0.6), uHeatC, uHeat * 0.5);
+  c += hcol * hl * (0.9 + uPulse * 0.8 + uEnergy * 0.3 + uHeat * 0.5) + vec3(1.0) * hcore * 0.7;
+  a += hl * 0.7 + hcore * 0.5;
+  // combo milestone: a shock wave races up the track
+  if (uShock < 1.1) {
+    float sy = uShock * 15.0;
+    float k = 1.0 - uShock / 1.1;
+    float wave = exp(-pow((y - sy) / (0.25 + uShock * 0.6), 2.0)) * k * step(abs(x), half_ + 0.5);
+    c += uShockC * wave * 1.6; a += wave * 0.7;
+  }
+  // combo broken: a red flash on the glass and the edges
+  if (uBreak < 0.6) {
+    float k = 1.0 - uBreak / 0.6;
+    c += vec3(1.0, 0.12, 0.3) * (edge * 1.6 + inside * 0.18 * (1.0 - far)) * k * k;
+    a += inside * 0.1 * k;
+  }
   // beat lines scroll with the music, downbeats brighter
   if (inside > 0.5 && y > 0.05) {
     for (int k = 0; k < 24; k++) {
@@ -157,6 +206,7 @@ varying float vState;
 varying float vAge;
 varying float vFar;
 varying float vFlags;
+varying float vYh;
 void main() {
   float t = aNote.x;
   float lane = aNote.y;
@@ -200,6 +250,7 @@ void main() {
   vLen = top - bottom;
   vHold = dur > 0.0 && !link ? 1.0 : 0.0;
   vFar = clamp(yh / L, 0.0, 1.0);
+  vYh = yh;
   vColor = uLaneColor[int(lane)];
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
@@ -209,6 +260,8 @@ const NOTE_FRAG = /* glsl */ `
 uniform float uTime;
 uniform float uLaneW;
 uniform float uPulse;
+uniform float uCentre;
+varying float vYh;
 varying vec2 vL;
 varying float vLen;
 varying float vHold;
@@ -253,7 +306,7 @@ void main() {
     }
     // head: a tile of glass with a bright core line
     if (vL.y < ${(TILE / 2 + 0.01).toFixed(3)}) {
-      float sd = sdRound(p, vec2(W * 0.5, ${(TILE / 2).toFixed(3)}), 0.09);
+      float sd = sdRound(p, vec2(W * 0.5, ${(TILE / 2).toFixed(3)}), 0.12);
       float fill = smoothstep(0.012, -0.012, sd);
       float rim = exp(-abs(sd) * 60.0);
       float inner = smoothstep(-0.02, -0.12, sd);
@@ -262,8 +315,15 @@ void main() {
       vec3 body = mix(vColor * 0.42, vColor * 0.14, inner) + vec3(0.02, 0.02, 0.05);
       // a soft highlight on the top edge, like light on a glass edge
       body += vec3(0.25) * smoothstep(0.06, 0.16, p.y) * fill * 0.5;
-      vec3 tc = body * fill + edgeC * rim * 1.3 + (vColor + 0.55) * core * 1.15;
+      // the centre line runs across the whole tile, with bright ticks at both ends: aim with it
+      float tick = exp(-abs(p.y) * 60.0) * smoothstep(W * 0.3, W * 0.47, abs(p.x)) * fill;
+      vec3 tc = body * fill + edgeC * rim * 1.3 + (vColor + 0.55) * core * 1.15 + vec3(1.0, 0.95, 0.85) * tick * 1.4;
       float ta = fill * 0.92 + rim * 0.8;
+      // in the dead-centre band: the tile lights up gold
+      if (vState == 0.0) {
+        float sweet = 1.0 - smoothstep(uCentre, uCentre * 2.6, abs(vYh));
+        tc += vec3(1.0, 0.82, 0.5) * sweet * (fill * 0.45 + rim * 0.9);
+      }
       if (live) { ta *= 0.85 + 0.15 * sin(uTime * 10.0 + p.x * 8.0); }
       c = mix(c, tc, clamp(ta, 0.0, 1.0));
       a = max(a, ta);
@@ -321,6 +381,8 @@ const SPARKS = 4096;
 
 export interface PlayfieldSetup {
   lanes: number;
+  /** Dead-centre half-window (s), drawn as a band at the hit line. */
+  centre?: number;
   approach: number;
   /** Tilt of the track (degrees, 0 = flat). */
   tilt: number;
@@ -357,6 +419,15 @@ export class Playfield {
   private readonly pressTarget = new Float32Array(MAX_LANES);
   private readonly holdGlow = new Float32Array(MAX_LANES);
   private readonly flashT = new Float32Array(MAX_LANES).fill(9);
+  private readonly beam = new Float32Array(MAX_LANES).fill(9);
+  private heat = 0;
+  private heatTarget = 0;
+  private shake = 0;
+  private punch = 0;
+  /** Settings › reduced motion: no shaking. */
+  reducedMotion = false;
+  /** Dead-centre window (s), to draw its band at the hit line. */
+  private centreWin = 0.02;
   private w = 1;
   private h = 1;
   private tilt = 28;
@@ -379,6 +450,7 @@ export class Playfield {
       uLaneColor: { value: colors },
       uPulse: { value: 0 },
       uEnergy: { value: 0 },
+      uCentre: { value: 0.1 },
     };
     this.trackMat = new THREE.ShaderMaterial({
       vertexShader: TRACK_VERT,
@@ -392,6 +464,12 @@ export class Playfield {
         uBeats: { value: new Float32Array(24).fill(-100) },
         uDown: { value: new Float32Array(24) },
         uDanger: { value: 0 },
+        uHeat: { value: 0 },
+        uHeatC: { value: new THREE.Color(0.45, 0.55, 1) },
+        uShock: { value: 9 },
+        uShockC: { value: new THREE.Color(1, 1, 1) },
+        uBreak: { value: 9 },
+        uBeam: { value: this.beam },
       },
       transparent: true,
       depthWrite: false,
@@ -439,6 +517,12 @@ export class Playfield {
     this.beatCursor = 0;
     this.buildNotes(s.notes);
     this.flashT.fill(9);
+    this.beam.fill(9);
+    this.centreWin = s.centre ?? 0.02;
+    this.heat = this.heatTarget = 0;
+    this.shake = this.punch = 0;
+    this.trackMat.uniforms.uShock.value = 9;
+    this.trackMat.uniforms.uBreak.value = 9;
     this.press.fill(0);
     this.pressTarget.fill(0);
     this.holdGlow.fill(0);
@@ -447,6 +531,32 @@ export class Playfield {
 
   setApproach(seconds: number): void {
     this.uniforms.uApproach.value = seconds;
+  }
+
+  /** Combo tier (0–5): the track heats up, from blue to violet, magenta, orange, gold, white. */
+  setHeat(tier: number): void {
+    this.heatTarget = Math.min(1, tier * 0.21);
+    if (tier > 0) (this.trackMat.uniforms.uHeatC.value as THREE.Color).copy(heatColor(tier));
+  }
+
+  /** Combo milestone: a shock wave up the track, a jolt. */
+  shockwave(tier: number, strength = 1): void {
+    this.trackMat.uniforms.uShock.value = 0;
+    (this.trackMat.uniforms.uShockC.value as THREE.Color).copy(heatColor(tier));
+    this.kick(0.8 * strength);
+    this.punch = Math.min(1.5, this.punch + strength);
+  }
+
+  /** The combo broke: a red flash and a jolt. */
+  comboBreak(strength = 1): void {
+    this.trackMat.uniforms.uBreak.value = 0;
+    this.kick(0.55 * strength);
+  }
+
+  /** Shakes the track (decays by itself). */
+  kick(amount: number): void {
+    if (this.reducedMotion) return;
+    this.shake = Math.min(1.4, this.shake + amount);
   }
 
   private buildNotes(notes: Note[]): void {
@@ -568,15 +678,20 @@ export class Playfield {
   }
 
   /** Hit feedback: ring flash on the receptor and sparks. */
-  hit(lane: number, quality: 'perfect' | 'great' | 'good', big = false): void {
+  hit(lane: number, quality: 'centre' | 'perfect' | 'great' | 'good', big = false): void {
     if (lane < 0 || lane >= MAX_LANES) return;
     this.flashT[lane] = 0;
     const fc = (this.trackMat.uniforms.uFlashC.value as THREE.Color[])[lane];
     const lc = (this.uniforms.uLaneColor.value as THREE.Color[])[lane];
-    if (quality === 'perfect') fc.setRGB(1, 0.9, 0.7);
+    if (quality === 'centre') fc.setRGB(1.5, 1.35, 1.05);
+    else if (quality === 'perfect') fc.setRGB(1, 0.9, 0.7);
     else fc.copy(lc).multiplyScalar(quality === 'great' ? 1 : 0.6);
-    const n = quality === 'perfect' ? 22 : quality === 'great' ? 14 : 7;
-    this.emit(lane, n * (big ? 1.6 : 1), quality === 'perfect' ? -1 : lane, quality === 'perfect' ? 1.25 : 1);
+    if (quality === 'centre') this.beam[lane] = 0;
+    const n = quality === 'centre' ? 34 : quality === 'perfect' ? 20 : quality === 'great' ? 12 : 6;
+    // the hotter the combo, the bigger the bursts
+    const heat = 1 + this.heat * 0.8;
+    const gold = quality === 'centre' || quality === 'perfect';
+    this.emit(lane, n * (big ? 1.6 : 1) * heat, gold ? -1 : lane, (quality === 'centre' ? 1.55 : quality === 'perfect' ? 1.2 : 1) * (1 + this.heat * 0.25));
   }
 
   /** Sparks while a long note is held. */
@@ -603,7 +718,7 @@ export class Playfield {
       const a = Math.random() * Math.PI;
       const sp = (1.2 + Math.random() * 3.2) * power;
       O[i * 3] = x0 + (Math.random() - 0.5) * w * 0.7;
-      O[i * 3 + 1] = (Math.random() - 0.5) * 0.15;
+      O[i * 3 + 1] = (Math.random() - 0.5) * 0.25;
       O[i * 3 + 2] = 0.05;
       V[i * 3] = Math.cos(a) * sp * 0.6;
       V[i * 3 + 1] = Math.sin(a) * sp;
@@ -657,7 +772,23 @@ export class Playfield {
       // press glow: instant on, smooth release
       this.press[l] = Math.max(this.pressTarget[l], this.press[l] - dt * 5);
       this.flashT[l] = Math.min(9, this.flashT[l] + dt);
+      this.beam[l] = Math.min(9, this.beam[l] + dt);
     }
+    const tu = this.trackMat.uniforms;
+    tu.uShock.value = Math.min(9, (tu.uShock.value as number) + dt);
+    tu.uBreak.value = Math.min(9, (tu.uBreak.value as number) + dt);
+    this.heat += (this.heatTarget - this.heat) * Math.min(1, dt * (this.heatTarget > this.heat ? 3 : 8));
+    tu.uHeat.value = this.heat;
+    const approach = u.uApproach.value as number;
+    u.uCentre.value = (this.centreWin / Math.max(0.1, approach)) * TRACK_LEN;
+    // shake and punch: a jolt that dies out fast (never with reduced motion)
+    this.shake *= Math.exp(-dt * 10);
+    this.punch *= Math.exp(-dt * 7);
+    if (this.shake < 0.002) this.shake = 0;
+    const lw = u.uLaneW.value as number;
+    const amp = this.reducedMotion ? 0 : this.shake * lw * 0.09;
+    this.group.position.set((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp, 0);
+    this.group.scale.setScalar(1 + (this.reducedMotion ? 0 : this.punch * 0.012));
     this.sparkMat.uniforms.uClock.value = this.clock;
     this.sparkMat.uniforms.uPixel.value = this.h / 100;
     // the next 24 beats for the beat lines
@@ -708,7 +839,7 @@ export class Playfield {
     this.camera.updateProjectionMatrix();
     this.group.rotation.x = -th;
     // lane width in pixels: comfortable, never wider than the screen allows
-    const px = Math.min(Math.max(this.h * 0.115, 56), 150, (this.w * (portrait ? 0.96 : 0.62)) / this.lanes);
+    const px = Math.min(Math.max(this.h * 0.145, 64), 200, (this.w * (portrait ? 0.97 : 0.72)) / this.lanes);
     const pxPerUnit = this.w / 2 / (cz * k * this.camera.aspect);
     this.uniforms.uLaneW.value = px / pxPerUnit;
   }

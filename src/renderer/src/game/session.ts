@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import type { Chart, Note } from '@core/chart/types';
-import { Judge, accuracyOf, fullCombo, rankOf, starsOf, type JudgeEvent, type ScoreState } from '@core/game/judge';
+import { CENTRE_WINDOW, Judge, accuracyOf, comboTier, fullCombo, rankOf, starsOf, type JudgeEvent, type ScoreState } from '@core/game/judge';
 import type { PlayRecord } from '@core/game/progress';
 import type { TrackRef } from '@shared/types';
 import type { SongPlayer } from '../audio/player';
 import { musicLevels } from '../audio/context';
 import { engine, type FrameInfo } from '../gfx/engine';
-import { NOTE_BROKEN, NOTE_DONE, NOTE_GHOST, NOTE_HOLDING, NOTE_MISSED } from '../gfx/playfield';
+import { NOTE_BROKEN, NOTE_DONE, NOTE_GHOST, NOTE_HOLDING, NOTE_MISSED, heatColor } from '../gfx/playfield';
 import { InputRouter, type LaneInput } from './input';
-import { playHit } from '../audio/sfx';
+import { playCentre, playHit, playSfx } from '../audio/sfx';
 import type { LiveFeed } from './live';
 
 // A run: the chart, the player's clock, the judge, the playfield and the HUD tied together.
@@ -47,13 +47,15 @@ export let currentSession: GameSession | null = null;
 
 export type HudEvent =
   | { type: 'judge'; e: JudgeEvent; s: ScoreState }
-  | { type: 'milestone'; combo: number }
+  | { type: 'milestone'; combo: number; tier: number }
+  | { type: 'tier'; tier: number }
+  | { type: 'break'; combo: number }
   | { type: 'state'; state: SessionState }
   | { type: 'countdown'; n: number }
   | { type: 'reset'; s: ScoreState }
   | { type: 'end'; record: PlayRecord; offsets: number[] };
 
-const MILESTONES = [50, 100, 200, 300, 400, 500, 750, 1000, 1500, 2000];
+const MILESTONES = [25, 50, 100, 200, 300, 400, 500, 750, 1000, 1500, 2000];
 const LEAD_IN = 2.6;
 
 export class GameSession {
@@ -74,6 +76,8 @@ export class GameSession {
   private lastT = -10;
   private endAt: number;
   private readonly milestonesDone = new Set<number>();
+  private tier = 0;
+  private lastCombo = 0;
   /** Lanes currently holding a long note → their note index. */
   private readonly holdNote = new Map<number, number>();
   private holdSparkT = 0;
@@ -104,6 +108,10 @@ export class GameSession {
     return new Judge(notes, this.cfg.lanes, { windowScale: this.cfg.chart.params.windowScale, fail: this.cfg.fail && !this.cfg.practice, confirm: this.cfg.confirm });
   }
 
+  private get centreWin(): number {
+    return CENTRE_WINDOW * this.cfg.chart.params.windowScale;
+  }
+
   private notesInRange(): Note[] {
     const p = this.cfg.practice;
     return p ? this.cfg.chart.notes.filter((n) => n.t >= p.from - 0.01 && n.t <= p.to) : this.cfg.chart.notes;
@@ -132,7 +140,8 @@ export class GameSession {
   start(surface: HTMLElement): void {
     const pf = engine.playfield;
     const c = this.cfg.chart;
-    pf.setup({ lanes: this.cfg.lanes, approach: this.cfg.approach * (this.cfg.practice?.rate ?? 1), tilt: this.cfg.tilt, notes: this.judge.notes, beats: c.beats, downbeat: c.downbeat, meter: c.meter });
+    pf.setup({ lanes: this.cfg.lanes, centre: this.centreWin, approach: this.cfg.approach * (this.cfg.practice?.rate ?? 1), tilt: this.cfg.tilt, notes: this.judge.notes, beats: c.beats, downbeat: c.downbeat, meter: c.meter });
+    pf.reducedMotion = engine.cosmos.reducedMotion;
     pf.setIntro(true);
     this.input.configure({ lanes: this.cfg.lanes, keys: this.cfg.keys, pad: this.cfg.pad });
     this.input.laneAt = (x, y) => pf.laneAt(x, y);
@@ -192,12 +201,15 @@ export class GameSession {
           const n = this.judge.notes[e.note];
           const held = n.dur > 0;
           pf.setState(e.note, held ? NOTE_HOLDING : NOTE_DONE, e.t);
-          pf.hit(e.lane, e.judgement as 'perfect' | 'great' | 'good', n.chord >= 0);
+          pf.hit(e.lane, e.centre ? 'centre' : (e.judgement as 'perfect' | 'great' | 'good'), n.chord >= 0);
           if (held) {
             this.holdNote.set(e.lane, e.note);
             pf.setHolding(e.lane, true);
           }
-          if (this.cfg.hitSounds) playHit(e.judgement === 'perfect' ? 1 : 0.7);
+          if (this.cfg.hitSounds) {
+            if (e.centre) playCentre(this.judge.state.centreStreak);
+            else playHit(e.judgement === 'perfect' ? 1 : 0.7);
+          }
           break;
         }
         case 'hold-ok':
@@ -225,14 +237,29 @@ export class GameSession {
     }
     const s = this.judge.state;
     this.minEnergy = Math.min(this.minEnergy, s.energy);
+    // combo tiers heat the track up; a milestone sends a shock wave; a broken combo flashes red
+    const tier = comboTier(s.combo);
+    if (tier !== this.tier) {
+      this.tier = tier;
+      pf.setHeat(tier);
+      this.emit({ type: 'tier', tier });
+    }
     for (const m of MILESTONES) {
       if (s.combo >= m && !this.milestonesDone.has(m)) {
         this.milestonesDone.add(m);
-        this.emit({ type: 'milestone', combo: m });
-        const big = m >= 500;
-        engine.cosmos.milestone(big ? 1.3 : 0.8, big ? new THREE.Color(1, 0.75, 0.4) : new THREE.Color(0.6, 0.75, 1));
+        const mt = Math.max(1, comboTier(m));
+        this.emit({ type: 'milestone', combo: m, tier: mt });
+        pf.shockwave(mt, m >= 200 ? 1.3 : m >= 100 ? 1 : 0.7);
+        const c = heatColor(mt);
+        engine.cosmos.milestone(m >= 500 ? 1.4 : m >= 100 ? 1 : 0.7, new THREE.Color(c.r, c.g, c.b));
       }
     }
+    if (s.combo === 0 && this.lastCombo >= 10 && !this.cfg.autoplay) {
+      pf.comboBreak(Math.min(1.2, 0.4 + this.lastCombo / 100));
+      if (this.cfg.hitSounds) playSfx('break', Math.min(1, 0.4 + this.lastCombo / 150));
+      this.emit({ type: 'break', combo: this.lastCombo });
+    }
+    this.lastCombo = s.combo;
     if (s.combo === 0) this.milestonesDone.clear();
   }
 
@@ -369,9 +396,11 @@ export class GameSession {
     this.judge = this.newJudge();
     this.holdNote.clear();
     this.milestonesDone.clear();
+    this.tier = 0;
+    this.lastCombo = 0;
     this.minEnergy = 100;
     const c = this.cfg.chart;
-    engine.playfield.setup({ lanes: this.cfg.lanes, approach: this.cfg.approach * (this.cfg.practice?.rate ?? 1), tilt: this.cfg.tilt, notes: this.judge.notes, beats: c.beats, downbeat: c.downbeat, meter: c.meter });
+    engine.playfield.setup({ lanes: this.cfg.lanes, centre: this.centreWin, approach: this.cfg.approach * (this.cfg.practice?.rate ?? 1), tilt: this.cfg.tilt, notes: this.judge.notes, beats: c.beats, downbeat: c.downbeat, meter: c.meter });
     engine.playfield.setIntro(true, true);
     this.begin();
     this.emit({ type: 'reset', s: this.judge.state });
@@ -406,6 +435,8 @@ export class GameSession {
       accuracy: accuracyOf(s),
       maxCombo: s.maxCombo,
       perfect: s.perfect,
+      centre: s.centre,
+      bestCentreStreak: s.bestCentreStreak,
       great: s.great,
       good: s.good,
       miss: s.miss,

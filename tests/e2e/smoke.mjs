@@ -14,7 +14,7 @@ try {
   suite.check('adblock status readable', typeof st.enabled === 'boolean', `enabled=${st.enabled} waiting=${st.waiting} active=${st.active}`);
   const cm = await win.evaluate(() => window.ct.library.chudMusic().then((l) => ({ found: l.found, tracks: l.tracks.length, playlists: l.playlists.length, local: l.tracks.filter((t) => t.source === 'local').length })));
   suite.check('Chud Music library read', true, JSON.stringify(cm));
-  for (const p of ['library', 'stats', 'settings', 'search', 'playlists']) {
+  for (const p of ['library', 'stats', 'leaderboard', 'settings', 'search', 'playlists']) {
     await win.evaluate((id) => window.__ct.nav.getState().go({ id }), p);
     await settle(win, 1.2);
     await shot(win, `smoke-${p}`);

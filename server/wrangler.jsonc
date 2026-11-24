@@ -1,0 +1,17 @@
+// Chud Tiles' site on Cloudflare: the browser version (dist-web, built by `npm run web:build`)
+// and the leaderboard API (src/index.ts). Deploy: `npm run site:deploy`.
+{
+  "name": "chud-tiles",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "../dist-web",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "chud-tiles.holy-c.men", "custom_domain": true }],
+  "d1_databases": [{ "binding": "DB", "database_name": "chud-tiles-scores", "database_id": "e2f24c4c-bcb8-4bad-acb8-dec391966b9c" }],
+  "observability": { "enabled": true },
+  "workers_dev": false
+}

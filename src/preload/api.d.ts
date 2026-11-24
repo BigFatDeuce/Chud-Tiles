@@ -1,4 +1,4 @@
-import type { AdblockStatus, ChudMusicLibrary, LibraryScan, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind } from '../shared/types';
+import type { AdblockStatus, ChudMusicLibrary, LibraryScan, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind, UpdateInfo } from '../shared/types';
 
 // The bridge the preload script exposes to the interface as `window.ct` (desktop only).
 
@@ -75,6 +75,11 @@ export interface CtBridge {
     onFullscreen(cb: (on: boolean) => void): () => void;
     /** The window was minimised or hidden (false), or shown again (true). */
     onVisible(cb: (visible: boolean) => void): () => void;
+  };
+  updates: {
+    check(): Promise<UpdateInfo>;
+    install(): void;
+    onState(cb: (s: UpdateInfo) => void): () => void;
   };
   openExternal(url: string): void;
   /** Language of the interface, for the texts of the system side (dialogs, errors). */

@@ -9,6 +9,7 @@ import { useProfile } from '../store/profile';
 import { useSettings } from '../store/settings';
 import { engine } from '../gfx/engine';
 import { playSfx } from '../audio/sfx';
+import { PublishScore } from '../components/PublishScore';
 import { AchIcon, DIFF_COLOR, DIFF_LABEL, RANK_COLOR, fmtPct, fmtScore } from '../components/ui';
 
 function useCountUp(target: number, ms = 1400): number {
@@ -145,6 +146,8 @@ export function Results({ result }: { result: ResultParams }) {
           <div className="stat-grid">
             <div className="stat"><small>{tr('Précision')}</small><b>{fmtPct(r.accuracy)}</b></div>
             <div className="stat"><small>{tr('Combo max')}</small><b>{r.maxCombo}</b></div>
+            {r.centre !== undefined && <div className="stat"><small>{tr('Pile au centre')}</small><b style={{ color: '#fff6dc', textShadow: '0 0 14px rgba(255, 204, 102, 0.8)' }}>{r.centre}</b></div>}
+            {r.bestCentreStreak !== undefined && <div className="stat"><small>{tr('Meilleure série pile')}</small><b style={{ color: 'var(--gold)' }}>{r.bestCentreStreak}</b></div>}
             <div className="stat"><small>{tr('Parfait')}</small><b style={{ color: '#ffe3a8' }}>{r.perfect}</b></div>
             <div className="stat"><small>{tr('Super')}</small><b style={{ color: 'var(--cyan)' }}>{r.great}</b></div>
             <div className="stat"><small>{tr('Bien')}</small><b style={{ color: 'var(--violet)' }}>{r.good}</b></div>
@@ -153,6 +156,7 @@ export function Results({ result }: { result: ResultParams }) {
             <div className="stat"><small>{tr('Hors note')}</small><b>{r.stray}</b></div>
           </div>
         </div>
+        <PublishScore record={r} track={result.track} />
         <div className="panel pad">
           <div className="panel-title">
             <TrendingUp size={16} />

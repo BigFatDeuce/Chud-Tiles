@@ -1,6 +1,7 @@
 import { tr } from './i18n';
 import { platform } from './platform';
 import { toast } from './store/toasts';
+import { RELEASES_URL } from '@shared/project';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Upload } from 'lucide-react';
 import { useNav } from './store/nav';
@@ -17,6 +18,7 @@ import { Results } from './pages/Results';
 import { Library } from './pages/Library';
 import { Settings } from './pages/Settings';
 import { Stats } from './pages/Stats';
+import { Leaderboard } from './pages/Leaderboard';
 import { Search } from './pages/Search';
 import { Playlists } from './pages/Playlists';
 import { Calibration } from './pages/Calibration';
@@ -24,6 +26,7 @@ import { Editor } from './pages/Editor';
 import { openDropped } from './game/actions';
 import { engine } from './gfx/engine';
 import { setVolumes } from './audio/context';
+import { currentHost } from './yt/host';
 
 function useApplySettings(): void {
   const s = useSettings();
@@ -41,6 +44,8 @@ function useApplySettings(): void {
   }, [s.fpsCap, s.menuFps30, s.effects, s.reducedMotion, s.tilt, s.quality]);
   useEffect(() => {
     setVolumes(s.volume);
+    // the YouTube player is outside the audio graph (song page preview; runs follow it themselves)
+    if (useNav.getState().page.id !== 'game') currentHost()?.setVolume(s.volume.master * s.volume.music);
   }, [s.volume]);
 }
 
@@ -109,12 +114,43 @@ export function App() {
     window.addEventListener('pointermove', move);
     // download mode: yt-dlp is installed or updated in the background at launch (not in tests)
     if (platform.ytdlp && useSettings.getState().ytSource === 'download' && !window.ct?.testing) void platform.ytdlp.prepare();
+    // updates: looked up at launch (not in tests); installer and AppImage download by themselves
+    let offUpdate: (() => void) | undefined;
+    if (platform.updates && useSettings.getState().checkUpdates && !window.ct?.testing) {
+      let told = '';
+      offUpdate = platform.updates.onState((u) => {
+        const key = `${u.status}:${u.version}`;
+        if (told === key) return;
+        if (u.status === 'ready') {
+          told = key;
+          toast(
+            { kind: 'gold', title: tr('Mise à jour {v} prête', { v: u.version ?? '' }), text: tr('Elle s’installera à la fermeture du jeu, ou tout de suite :'), action: { label: tr('Redémarrer'), run: () => platform.updates?.install() } },
+            20000,
+          );
+        } else if (u.status === 'available') {
+          told = key;
+          const url = u.url ?? RELEASES_URL;
+          toast(
+            { kind: 'gold', title: tr('Version {v} disponible', { v: u.version ?? '' }), text: tr('Vous jouez à la version {v}.', { v: platform.version }), action: { label: tr('Télécharger'), run: () => platform.openExternal(url) } },
+            20000,
+          );
+        }
+      });
+      // a few seconds after launch: the first screen comes first
+      const t = setTimeout(() => void platform.updates?.check(), 4000);
+      const off = offUpdate;
+      offUpdate = () => {
+        clearTimeout(t);
+        off();
+      };
+    }
     // minimised or hidden window: nothing to draw
     const offVisible = platform.window?.onVisible?.((v) => (engine.hidden = !v));
     return () => {
       window.removeEventListener('pointermove', move);
       offGpu?.();
       offVisible?.();
+      offUpdate?.();
     };
   }, []);
 
@@ -137,6 +173,9 @@ export function App() {
       break;
     case 'stats':
       content = <Stats />;
+      break;
+    case 'leaderboard':
+      content = <Leaderboard />;
       break;
     case 'search':
       content = <Search query={page.query} />;

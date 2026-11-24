@@ -57,6 +57,7 @@ export function electronPlatform(ct: CtBridge): Platform {
       partition: ct.yt.partition,
       adblock: ct.yt.adblock,
     },
+    updates: ct.updates,
     ytdlp: {
       status: () => ct.ytdlp.status(),
       install: () => ct.ytdlp.install(),

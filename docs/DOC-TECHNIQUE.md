@@ -163,6 +163,22 @@ Navigateur : `?safe` dans l'adresse (effets minimaux ; le navigateur garde son p
 
 Sauvegarde / restauration du profil complet dans un fichier JSON (Réglages › Données).
 
+### Classement en ligne (`server/`, `src/shared/leaderboard.ts`)
+
+Le site `chud-tiles.holy-c.men` est un Worker Cloudflare : il sert la version navigateur (`dist-web`, ressources statiques) et l'API du classement sous `/api/`. Les scores sont dans une base D1 (SQLite, `server/schema.sql`).
+
+| Route | Effet |
+|---|---|
+| `GET /api/scores/recent?difficulty=all\|easy\|normal\|hard\|expert` | les 100 derniers scores |
+| `GET /api/scores/song?key=&difficulty=&lanes=` | le classement d'un morceau : meilleur score de chaque pseudo |
+| `POST /api/scores` | publie un score (corps JSON `ScoreSubmission`) |
+
+- Un morceau est identifié par `yt:<id vidéo>` ou `s:<artiste>|<titre>` nettoyés (`songKeyOf`) : un même morceau a le même classement d'un joueur à l'autre. Classement par morceau, difficulté et nombre de colonnes.
+- Seuls comptent les morceaux terminés en Facile à Expert, hors entraînement, aperçu et parties en direct (notes prédites). Le serveur refuse les scores incohérents (`validateScore` : comptes de notes, combo, score maximal possible, pseudo).
+- Aucun compte : un pseudo n'est qu'un nom. L'adresse de l'expéditeur n'est gardée qu'une heure, hachée avec un sel secret, pour limiter à 30 envois par heure.
+- Le jeu n'envoie rien sans le bouton *Publier* ; les tests automatisés ne joignent jamais le serveur ; Réglages › Jeu › Classement en ligne coupe tout.
+- Déployer : `npm run site:deploy` (construit le site puis `wrangler deploy -c server/wrangler.jsonc`). Le sel : `wrangler secret put SALT -c server/wrangler.jsonc`.
+
 ---
 
 ## 10. Tests

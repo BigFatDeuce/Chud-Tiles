@@ -10,3 +10,4 @@ build/THIRD-PARTY-NOTICES.txt
 scripts/.i18n-missing.json
 scripts/.i18n-report.txt
 .chud-music-dir
+.wrangler/

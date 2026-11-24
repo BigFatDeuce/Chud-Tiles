@@ -1,4 +1,4 @@
-import type { AdblockStatus, ChudMusicLibrary, LibraryScan, Playlist, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind } from '@shared/types';
+import type { AdblockStatus, ChudMusicLibrary, LibraryScan, Playlist, TrackRef, YtDownloaded, YtdlpStatus, YtItem, YtSearchKind, UpdateInfo } from '@shared/types';
 
 // What the game asks of the system it runs on. Two implementations: Electron (Windows, Linux,
 // macOS: everything) and the browser (local files, YouTube by link). The interface shows or hides
@@ -73,6 +73,12 @@ export interface Platform {
       needed(): void;
       onStatus(cb: (s: AdblockStatus) => void): () => void;
     };
+  };
+  /** Desktop: updates from the GitHub releases. */
+  updates?: {
+    check(): Promise<UpdateInfo>;
+    install(): void;
+    onState(cb: (s: UpdateInfo) => void): () => void;
   };
   /** Desktop: optional download of YouTube songs with yt-dlp (then played as local files). */
   ytdlp?: {

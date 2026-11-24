@@ -7,7 +7,15 @@ export type Judgement = 'perfect' | 'great' | 'good' | 'miss';
 
 /** Half-widths of the judgement windows, s (× the difficulty's windowScale). */
 export const WINDOWS = { perfect: 0.045, great: 0.09, good: 0.135 };
-const POINTS = { perfect: 1000, great: 700, good: 350, miss: 0 };
+/**
+ * Dead centre: the tile's centre line right on the hit line. A perfect this close is worth half as
+ * much again, and dead-centre hits in a row build the centre streak, a bonus on top of the combo.
+ */
+export const CENTRE_WINDOW = 0.02;
+const POINTS = { perfect: 1000, great: 600, good: 250, miss: 0 };
+export const CENTRE_POINTS = 1500;
+/** +10 % per dead-centre hit in a row, up to +100 %. */
+export const centreBonus = (streak: number) => 1 + 0.1 * Math.min(Math.max(streak - 1, 0), 10);
 const ACC = { perfect: 1, great: 0.7, good: 0.4, miss: 0 };
 /** Releasing this long before the end of a long note still counts as held to the end. */
 export const RELEASE_GRACE = 0.15;
@@ -22,6 +30,10 @@ export interface JudgeEvent {
   judgement?: Judgement;
   /** Press time minus note time, s (negative = early). */
   offset?: number;
+  /** Dead centre (a perfect within the centre window). */
+  centre?: boolean;
+  /** Points won by this event (multipliers included). */
+  points?: number;
   t: number;
 }
 
@@ -44,6 +56,10 @@ export interface ScoreState {
   energy: number;
   failed: boolean;
   multiplier: number;
+  /** Dead-centre hits (counted among the perfects), the current and best streaks of them. */
+  centre: number;
+  centreStreak: number;
+  bestCentreStreak: number;
   /** Signed offsets of every hit (s), for the timing histogram and calibration hints. */
   offsets: number[];
 }
@@ -56,12 +72,21 @@ export interface JudgeOptions {
   confirm?: (t: number) => boolean;
 }
 
+/** Combo tiers: ×2 at 25, ×3 at 50, ×4 at 100, ×6 at 200, ×8 at 400. */
+export const COMBO_TIERS = [25, 50, 100, 200, 400];
 export function multiplierFor(combo: number): number {
-  return combo >= 100 ? 4 : combo >= 50 ? 3 : combo >= 25 ? 2 : 1;
+  return combo >= 400 ? 8 : combo >= 200 ? 6 : combo >= 100 ? 4 : combo >= 50 ? 3 : combo >= 25 ? 2 : 1;
+}
+
+/** 0 below the first tier, then 1 to 5. */
+export function comboTier(combo: number): number {
+  let k = 0;
+  for (const t of COMBO_TIERS) if (combo >= t) k++;
+  return k;
 }
 
 export function emptyScore(): ScoreState {
-  return { score: 0, combo: 0, maxCombo: 0, perfect: 0, great: 0, good: 0, miss: 0, holdOk: 0, holdBreak: 0, stray: 0, ghosts: 0, accSum: 0, judged: 0, energy: 100, failed: false, multiplier: 1, offsets: [] };
+  return { score: 0, combo: 0, maxCombo: 0, perfect: 0, great: 0, good: 0, miss: 0, holdOk: 0, holdBreak: 0, stray: 0, ghosts: 0, accSum: 0, judged: 0, energy: 100, failed: false, multiplier: 1, centre: 0, centreStreak: 0, bestCentreStreak: 0, offsets: [] };
 }
 
 export function accuracyOf(s: ScoreState): number {
@@ -98,6 +123,7 @@ export class Judge {
   readonly state: ScoreState = emptyScore();
   private statusBuf: Uint8Array;
   private readonly win: { perfect: number; great: number; good: number };
+  private readonly centreWin: number;
   private readonly opt: JudgeOptions;
   private readonly lanes: number[][] = [];
   private readonly next: number[] = [];
@@ -108,6 +134,7 @@ export class Judge {
     this.opt = opt;
     const k = opt.windowScale ?? 1;
     this.win = { perfect: WINDOWS.perfect * k, great: WINDOWS.great * k, good: WINDOWS.good * k };
+    this.centreWin = CENTRE_WINDOW * k;
     this.statusBuf = new Uint8Array(Math.max(16, this.notes.length * 2));
     for (let l = 0; l < lanes; l++) {
       this.lanes.push([]);
@@ -164,11 +191,12 @@ export class Judge {
     return a <= this.win.perfect ? 'perfect' : a <= this.win.great ? 'great' : a <= this.win.good ? 'good' : 'miss';
   }
 
-  private credit(j: Judgement, points = POINTS[j]): void {
+  private credit(j: Judgement, points: number = POINTS[j]): number {
     const s = this.state;
     if (j === 'miss') {
       s.miss++;
       s.combo = 0;
+      s.centreStreak = 0;
       s.energy = Math.max(0, s.energy - 8);
     } else {
       s[j]++;
@@ -177,10 +205,12 @@ export class Judge {
       s.energy = Math.min(100, s.energy + (j === 'perfect' ? 1.5 : j === 'great' ? 1 : 0));
     }
     s.multiplier = multiplierFor(s.combo);
-    s.score += points * (j === 'miss' ? 0 : s.multiplier);
+    const won = Math.round(points * (j === 'miss' ? 0 : s.multiplier));
+    s.score += won;
     s.accSum += ACC[j];
     s.judged++;
     if (this.opt.fail && s.energy <= 0) s.failed = true;
+    return won;
   }
 
   press(lane: number, t: number): JudgeEvent | null {
@@ -199,11 +229,18 @@ export class Judge {
       if (off < -this.win.good) break; // too early for anything
       if (off > this.win.good) continue; // late: update() will count it as missed
       const j = this.judgementFor(off);
+      const s = this.state;
+      const centre = j === 'perfect' && Math.abs(off) <= this.centreWin;
+      if (centre) {
+        s.centre++;
+        s.centreStreak++;
+        s.bestCentreStreak = Math.max(s.bestCentreStreak, s.centreStreak);
+      } else s.centreStreak = 0;
       this.status[idx] = 1;
-      this.credit(j);
-      this.state.offsets.push(off);
+      const points = this.credit(j, centre ? CENTRE_POINTS * centreBonus(s.centreStreak) : POINTS[j]);
+      s.offsets.push(off);
       if (n.dur > 0) this.active[lane] = { note: idx, end: n.t + n.dur };
-      return { kind: 'hit', note: idx, lane, judgement: j, offset: off, t };
+      return { kind: 'hit', note: idx, lane, judgement: j, offset: off, centre, points, t };
     }
     this.state.stray++;
     this.state.energy = Math.max(0, this.state.energy - 2);
@@ -217,12 +254,13 @@ export class Judge {
     this.active[lane] = null;
     if (t >= a.end - RELEASE_GRACE) {
       this.state.holdOk++;
-      this.credit('perfect', 500);
+      const points = this.credit('perfect', 500);
       this.state.perfect--; // tails are counted apart
-      return { kind: 'hold-ok', note: a.note, lane, t };
+      return { kind: 'hold-ok', note: a.note, lane, points, t };
     }
     this.state.holdBreak++;
     this.state.combo = 0;
+    this.state.centreStreak = 0;
     this.state.multiplier = 1;
     this.state.energy = Math.max(0, this.state.energy - 6);
     this.state.judged++;
@@ -238,9 +276,9 @@ export class Judge {
       if (a && t >= a.end) {
         this.active[lane] = null;
         this.state.holdOk++;
-        this.credit('perfect', 500);
+        const points = this.credit('perfect', 500);
         this.state.perfect--;
-        out.push({ kind: 'hold-ok', note: a.note, lane, t: a.end });
+        out.push({ kind: 'hold-ok', note: a.note, lane, points, t: a.end });
       }
       const q = this.lanes[lane];
       let i = this.next[lane];

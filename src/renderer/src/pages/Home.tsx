@@ -2,6 +2,7 @@ import { FolderOpen, Play, Radio, Sparkles } from 'lucide-react';
 import { levelOf, titleOf } from '@core/game/progress';
 import { platform } from '../platform';
 import { useLibrary, recentTracks } from '../store/library';
+import { DesktopCallout } from '../components/DesktopCallout';
 import { useProfile } from '../store/profile';
 import { go } from '../store/nav';
 import { pickAndOpen, openTrack } from '../game/actions';
@@ -70,6 +71,7 @@ export function Home() {
         <p className="tip" style={{ marginTop: 18 }}>{tr('Astuce : glissez-déposez des fichiers audio n’importe où dans la fenêtre.')}</p>
       </section>
       <section className="home-side">
+        <DesktopCallout />
         <div className="panel profile-card brackets">
           <LevelRing xp={profile.xp} />
           <div className="grow" style={{ minWidth: 0 }}>

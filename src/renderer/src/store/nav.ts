@@ -39,6 +39,7 @@ export type Page =
   | { id: 'search'; query?: string }
   | { id: 'playlists' }
   | { id: 'stats' }
+  | { id: 'leaderboard' }
   | { id: 'settings'; tab?: string }
   | { id: 'calibration' }
   | { id: 'song'; track: TrackRef; file?: File }
@@ -52,6 +53,7 @@ const PLACE: Record<Page['id'], PlaceId> = {
   search: 'search',
   playlists: 'playlists',
   stats: 'stats',
+  leaderboard: 'stats',
   settings: 'settings',
   calibration: 'calibration',
   song: 'song',

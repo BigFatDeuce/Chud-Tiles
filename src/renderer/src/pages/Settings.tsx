@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Gamepad2, Gauge, Info, Keyboard, MonitorCog, Music2, Radio, RefreshCw, RotateCcw, Database, Download, ShieldCheck, Upload, Trash2, Sliders } from 'lucide-react';
-import type { AdblockStatus, YtdlpStatus } from '@shared/types';
+import type { AdblockStatus, UpdateInfo, YtdlpStatus } from '@shared/types';
+import { RELEASES_URL } from '@shared/project';
 import { platform } from '../platform';
 import { DEFAULTS, DEFAULT_KEYS, DEFAULT_PAD, keyName, padName, useSettings, type Settings as S } from '../store/settings';
 import { useProfile } from '../store/profile';
@@ -122,6 +123,9 @@ function GameTab() {
       </Row>
       <Row title={tr('Pause automatique')} hint={tr('Met en pause quand la fenêtre perd le focus')}>
         <Toggle on={s.autoPause} onChange={(v) => s.set({ autoPause: v })} label={tr('Pause automatique')} />
+      </Row>
+      <Row title={tr('Classement en ligne')} hint={tr('Affiche les classements de chud-tiles.holy-c.men et permet d’y publier vos scores (un pseudo et le score, rien d’autre)')}>
+        <Toggle on={s.online} onChange={(v) => s.set({ online: v })} label={tr('Classement en ligne')} />
       </Row>
       <div className="row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>
         <button className="btn small ghost" onClick={() => s.reset(['lanes', 'approach', 'tilt', 'fail', 'showOffsets', 'hitSounds', 'autoPause'])}>
@@ -491,8 +495,8 @@ function YoutubeTab() {
           value={s.ytMode}
           onChange={(v) => s.set({ ytMode: v })}
           options={[
+            { v: 'learn-first', label: tr('Partie normale') },
             { v: 'live', label: tr('Jouer en direct') },
-            { v: 'learn-first', label: tr('Apprendre d’abord') },
           ]}
         />
       </Row>
@@ -817,10 +821,54 @@ function AboutTab() {
           <span className={`chip ${caps.chudMusic ? 'on' : ''}`}>Chud Music {caps.chudMusic ? tr('lisible') : tr('non')}</span>
           <span className="chip on">{tr('Rendu WebGL 2')}</span>
         </div>
+        {platform.updates && <UpdateRow />}
         <p className="tip" style={{ marginTop: 18 }}>
           {tr('Lecture YouTube par le lecteur officiel, sans téléchargement ni extraction de flux. Décodage des formats rares par FFmpeg (LGPL). Polices Oxanium et Space Grotesk (SIL Open Font License). Rendu Three.js (MIT). Toutes les images du jeu sont calculées en temps réel : aucune vidéo, aucune image volée.')}
         </p>
       </div>
     </>
+  );
+}
+
+/** Desktop: check for a new version at launch, or now. */
+function UpdateRow() {
+  const s = useSettings();
+  const [state, setState] = useState<UpdateInfo | null>(null);
+  useEffect(() => platform.updates?.onState(setState), []);
+  const check = async () => setState((await platform.updates?.check()) ?? null);
+  const label =
+    !state || state.status === 'idle'
+      ? ''
+      : state.status === 'checking'
+        ? tr('Recherche…')
+        : state.status === 'none'
+          ? tr('Vous avez la dernière version.')
+          : state.status === 'downloading'
+            ? tr('Téléchargement de la version {v}… {p} %', { v: state.version ?? '', p: Math.round((state.progress ?? 0) * 100) })
+            : state.status === 'ready'
+              ? tr('Version {v} prête : elle s’installera à la fermeture du jeu.', { v: state.version ?? '' })
+              : state.status === 'available'
+                ? tr('Version {v} disponible.', { v: state.version ?? '' })
+                : tr('Recherche impossible : {e}', { e: state.error ?? '' });
+  return (
+    <div className="update-row">
+      <Toggle on={s.checkUpdates} onChange={(v) => s.set({ checkUpdates: v })} label={tr('Chercher les mises à jour au lancement')} />
+      <div className="row wrap" style={{ gap: 10, alignItems: 'center' }}>
+        <button className="btn small" onClick={() => void check()} disabled={state?.status === 'checking' || state?.status === 'downloading'}>
+          {tr('Chercher maintenant')}
+        </button>
+        {state?.status === 'ready' && (
+          <button className="btn primary small" onClick={() => platform.updates?.install()}>
+            {tr('Redémarrer')}
+          </button>
+        )}
+        {state?.status === 'available' && (
+          <button className="btn primary small" onClick={() => platform.openExternal(state.url ?? RELEASES_URL)}>
+            {tr('Télécharger')}
+          </button>
+        )}
+        {label && <span className="muted">{label}</span>}
+      </div>
+    </div>
   );
 }

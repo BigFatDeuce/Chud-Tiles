@@ -20,6 +20,8 @@ module.exports = {
   files: ['out/**', 'package.json'],
   // Worker threads cannot be loaded from inside the asar archive.
   asarUnpack: ['out/main/chunks/adblock-worker-*.js'],
+  // the GitHub releases: electron-updater reads latest.yml / latest-linux.yml there
+  publish: [{ provider: 'github', owner: 'BigFatDeuce', repo: 'Chud-Tiles', releaseType: 'release' }],
   // the interface's own languages are enough: other Chromium locales are left out (smaller)
   electronLanguages: ['fr', 'en-US', 'en-GB'],
   win: {

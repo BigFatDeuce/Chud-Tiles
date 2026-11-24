@@ -1,6 +1,10 @@
 import { fmtNum, tr, trn } from '../i18n';
+import { MusicVolume } from '../components/MusicVolume';
+import { OnlineBoard } from '../components/OnlineBoard';
+import { PreGamePublish } from '../components/PreGamePublish';
+import { songKeyOf } from '@shared/leaderboard';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Dumbbell, Ear, Eye, Heart, Loader2, PenLine, Play, Radio, RotateCcw, Square, Zap } from 'lucide-react';
+import { AlertTriangle, Globe, ArrowLeft, Dumbbell, Ear, Eye, Heart, Loader2, PenLine, Play, Radio, RotateCcw, Square, Zap } from 'lucide-react';
 import type { TrackRef } from '@shared/types';
 import type { Analysis } from '@core/analysis/analyze';
 import { generateChart } from '@core/chart/generate';
@@ -147,6 +151,8 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
   /** YouTube: not learned yet (live play or listen first). */
   const [unlearned, setUnlearned] = useState(false);
   const [listen, setListen] = useState<{ p: number; heard: number } | null>(null);
+  /** "Play" asked while the song is still being downloaded or listened to: the run starts once ready. */
+  const [pendingPlay, setPendingPlay] = useState(false);
   const [learning, setLearning] = useState(false);
   const listenRef = useRef<{ rec: FrameRecorder; off: () => void; timer: ReturnType<typeof setInterval>; offState: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -231,6 +237,7 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
         if (!dl) return setError(errorText(e));
         // download failed: the official player takes over (live notes, or listen first)
         toast({ kind: 'error', title: tr('Téléchargement impossible : lecteur YouTube'), text: errorText(e) }, 8000);
+        setPendingPlay(false);
         setDlFailed(true);
         setDl(false);
       });
@@ -267,8 +274,12 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
         setUnlearned(false);
         playSfx('record', 0.7);
         toast({ kind: 'gold', title: tr('Morceau appris'), text: tr('Toutes les difficultés sont prêtes.') });
-      } else toast({ kind: 'error', title: tr('Écoute incomplète'), text: tr('Il faut entendre au moins {p} % du morceau.', { p: Math.round(LEARN_COVERAGE * 100) }) });
+      } else {
+        setPendingPlay(false);
+        toast({ kind: 'error', title: tr('Écoute incomplète'), text: tr('Il faut entendre au moins {p} % du morceau.', { p: Math.round(LEARN_COVERAGE * 100) }) });
+      }
     } catch (e) {
+      setPendingPlay(false);
       toastError(e, tr('Analyse impossible'));
     } finally {
       setLearning(false);
@@ -370,10 +381,35 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
   };
   const canPlay = !!song && (!isYt || ytState === 'ready');
 
+  /**
+   * YouTube song not learned yet, normal run: download it (desktop) or listen to it once (browser,
+   * or when the download failed), then play the full chart.
+   */
+  const playNormal = () => {
+    if (!isYt || listen) return;
+    playSfx('click', 0.7);
+    setPendingPlay(true);
+    if (platform.ytdlp && !dlFailed && !dl) {
+      setDl(true);
+      return;
+    }
+    void startListen();
+  };
+  useEffect(() => {
+    if (pendingPlay && canPlay && charts) {
+      setPendingPlay(false);
+      play();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPlay, canPlay, charts]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Enter' && canPlay) play();
-      else if (e.code === 'Enter' && isYt && unlearned && ytState === 'ready' && !listen) void playLive();
+      else if (e.code === 'Enter' && isYt && unlearned && ytState === 'ready' && !listen) {
+        if (s.ytMode === 'live') void playLive();
+        else playNormal();
+      }
       if (e.code === 'Escape') back();
     };
     window.addEventListener('keydown', onKey);
@@ -471,7 +507,7 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
                   <h3>{tr('Première rencontre')}</h3>
                 </div>
                 <p className="tip" style={{ marginTop: 0 }}>
-                  {tr('Ce morceau n’a encore jamais été entendu par la station. Jouez-le en direct — les notes sont écrites pendant la lecture, avec un peu d’avance — ou laissez-le jouer une fois pour obtenir une partition complète, calée sur toute la chanson.')}
+                  {tr('Ce morceau n’a encore jamais été entendu par la station. Partie normale : il est écouté une fois, puis vous jouez la partition complète, calée sur toute la chanson (et classée en ligne). En direct : les notes sont écrites pendant la lecture, avec un peu d’avance.')}
                 </p>
                 {listen ? (
                   <>
@@ -501,11 +537,11 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
                   </>
                 ) : (
                   <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                    <button className={`btn ${s.ytMode !== 'live' ? 'primary' : ''}`} disabled={ytState !== 'ready' || !canAnalyse(host)} onClick={playNormal}>
+                      <Ear size={16} /> {tr('Partie normale')}
+                    </button>
                     <button className={`btn ${s.ytMode === 'live' ? 'primary' : ''}`} disabled={ytState !== 'ready' || !canAnalyse(host)} onClick={() => void playLive()}>
                       <Radio size={16} /> {tr('Jouer en direct')}
-                    </button>
-                    <button className={`btn ${s.ytMode === 'learn-first' ? 'primary' : ''}`} disabled={ytState !== 'ready' || !canAnalyse(host)} onClick={() => void startListen()}>
-                      <Ear size={16} /> {tr('Écouter d’abord')}
                     </button>
                   </div>
                 )}
@@ -558,6 +594,7 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
                 <Timeline an={song.analysis} chart={charts?.[diff] ?? null} />
               </div>
               <div className="panel pad">
+                <MusicVolume />
                 <div className="opt-row">
                   <div className="what">
                     <b>{tr('Colonnes')}</b>
@@ -702,7 +739,11 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
             </div>
           )}
           <div className="row">
-            {isYt && unlearned && !song ? (
+            {isYt && unlearned && !song && s.ytMode !== 'live' ? (
+              <button className="btn primary huge grow" disabled={ytState !== 'ready' || !!listen || !canAnalyse(host)} onClick={playNormal}>
+                {listen ? <Loader2 size={22} className="spin" /> : <Play size={22} fill="currentColor" />} {listen ? tr('Écoute en cours…') : tr('Jouer')} <span className="kbd">{tr('Entrée')}</span>
+              </button>
+            ) : isYt && unlearned && !song ? (
               <button className="btn primary huge grow" disabled={ytState !== 'ready' || !!listen} onClick={playLive}>
                 <Radio size={22} /> {tr('Jouer en direct')} <span className="kbd">{tr('Entrée')}</span>
               </button>
@@ -731,6 +772,20 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
           <div className="tip row" style={{ gap: 6 }}>
             <Zap size={13} /> {tr('Touches : {keys} — Échap pour la pause', { keys: s.keys[s.lanes]?.map((k) => keyName(k[0] ?? '')).join(' · ') ?? '' })}
           </div>
+          {s.online && diff !== 'custom' && (
+            <div className="panel pad">
+              <div className="panel-title">
+                <Globe size={16} />
+                <h3>{tr('Classement en ligne')}</h3>
+                <span className="grow" />
+                <span className="muted" style={{ fontSize: 12 }}>
+                  {DIFF_LABEL[diff]} · {tr('{n} colonnes', { n: s.lanes })}
+                </span>
+              </div>
+              <PreGamePublish />
+              <OnlineBoard songKey={songKeyOf(track)} difficulty={diff} lanes={s.lanes} me={s.pseudo} limit={10} />
+            </div>
+          )}
         </div>
       </div>
     </div>

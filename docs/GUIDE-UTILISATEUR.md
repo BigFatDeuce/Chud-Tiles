@@ -72,11 +72,15 @@ Toutes les touches et tous les boutons se changent dans Réglages › Commandes 
 
 **Les notes** : simple (taper), **longue** (maintenir jusqu'au bout ; lâcher avant casse le combo), **accord** (plusieurs colonnes en même temps).
 
-**Jugements** : Parfait (±45 ms), Super (±90 ms), Bien (±135 ms), Raté. En Facile les fenêtres sont 15 % plus larges. « TÔT » / « TARD » s'affichent sous le jugement quand une note n'est pas parfaite (désactivable).
+**Jugements** : **Pile** (±20 ms : la ligne centrale de la tuile pile sur la ligne de frappe ; la tuile s'illumine en or dans cette zone), Parfait (±45 ms), Super (±90 ms), Bien (±135 ms), Raté. En Facile les fenêtres sont 15 % plus larges. « TÔT » / « TARD » s'affichent sous le jugement quand une note n'est pas parfaite (désactivable).
 
-**Score** : Parfait 1 000, Super 700, Bien 350, multiplié par le combo (×2 dès 25, ×3 dès 50, ×4 dès 100). **Rangs** : SS (≥ 99 % sans aucun raté), S (95 %), A (90 %), B (80 %), C (70 %), D.
+**Score** : Pile 1 500, Parfait 1 000, Super 600, Bien 250, multiplié par le combo (×2 dès 25, ×3 dès 50, ×4 dès 100, ×6 dès 200, ×8 dès 400). Les frappes pile à la suite forment une **série** : +10 % par frappe, jusqu'à +100 % ; tout autre jugement la remet à zéro. La piste chauffe à chaque palier de combo (violet, magenta, orange, or, blanc) et un combo cassé fait un éclair rouge. **Rangs** : SS (≥ 99 % sans aucun raté), S (95 %), A (90 %), B (80 %), C (70 %), D.
 
 **Pause** : reprendre, recommencer, ajuster le décalage audio de ±5 ms si les notes semblent en avance ou en retard, quitter.
+
+**Classement en ligne** : quand un morceau est terminé en Facile, Normal, Difficile ou Expert (ni entraînement, ni aperçu automatique, ni partie en direct aux notes prédites), l'écran de résultats propose de publier le score sous le pseudo de votre choix (2 à 20 caractères). Chaque morceau a son classement par difficulté et nombre de colonnes, visible sur la page du morceau ; l'onglet *Classement* liste les 100 derniers scores publiés, par difficulté. Seuls le pseudo et les chiffres de la partie sont envoyés, et seulement quand vous appuyez sur *Publier*. Réglages › Jeu › Classement en ligne coupe tout.
+
+**Volume de la musique** : sur la page du morceau avant de jouer, et dans le menu pause pendant la partie (le même réglage que Réglages › Audio › Musique).
 
 **Résultats** : score, précision, combo maximal, détails des jugements, courbe de précision du rythme (vos appuis sont-ils en avance ou en retard en moyenne ? un bouton applique la correction proposée), record, XP gagnée, succès obtenus, rejouer, changer de difficulté, morceau suivant de la file.
 

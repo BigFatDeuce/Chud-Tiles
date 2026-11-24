@@ -93,6 +93,18 @@ export function Toasts() {
           <div>
             <b>{t.title}</b>
             {t.text && <div className="tip" style={{ marginTop: 3 }}>{t.text}</div>}
+            {t.action && (
+              <button
+                className="btn primary small toast-action"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  t.action!.run();
+                  dismiss(t.id);
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         </div>
       ))}

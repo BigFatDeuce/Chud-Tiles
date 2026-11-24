@@ -3,7 +3,7 @@ import { audio, sfxBus } from './context';
 // Interface and hit sounds, synthesized once at start (no sound files): soft, short, in tune with
 // each other (a pentatonic around A), so they never fight the music.
 
-type SfxName = 'hit' | 'hover' | 'click' | 'back' | 'whoosh' | 'count' | 'go' | 'milestone' | 'record' | 'fail';
+type SfxName = 'hit' | 'centre' | 'break' | 'hover' | 'click' | 'back' | 'whoosh' | 'count' | 'go' | 'milestone' | 'record' | 'fail';
 const buffers = new Map<SfxName, AudioBuffer>();
 
 function render(seconds: number, fn: (t: number, i: number, sr: number) => number): AudioBuffer {
@@ -27,6 +27,10 @@ const env = (t: number, a: number, d: number) => (t < a ? t / a : Math.exp(-(t -
 function build(): void {
   if (buffers.size) return;
   buffers.set('hit', render(0.06, (t) => (noise() * 0.5 + tone(2400, t) * 0.5) * env(t, 0.0005, 0.012) * 0.5));
+  // dead centre: a short glassy chime over the tick (played higher as the streak grows)
+  buffers.set('centre', render(0.22, (t) => (noise() * 0.25 * env(t, 0.0005, 0.008) + (tone(1760, t) + tone(2640, t) * 0.45 + tone(3520, t) * 0.2) * env(t, 0.001, 0.05)) * 0.32));
+  // combo broken: a dull thud sliding down
+  buffers.set('break', render(0.45, (t) => (tone(140 * (1 - t * 0.8), t) * 0.8 + noise() * 0.25 * env(t, 0.001, 0.03)) * env(t, 0.004, 0.12) * 0.42));
   buffers.set('hover', render(0.05, (t) => tone(1760, t) * env(t, 0.002, 0.012) * 0.08));
   buffers.set('click', render(0.12, (t) => (tone(880, t) * 0.6 + tone(1320, t) * 0.4) * env(t, 0.002, 0.03) * 0.22));
   buffers.set('back', render(0.12, (t) => (tone(660, t) * 0.6 + tone(440, t) * 0.4) * env(t, 0.002, 0.035) * 0.2));
@@ -57,13 +61,14 @@ function build(): void {
   buffers.set('fail', render(1.4, (t) => (tone(220 * (1 - t * 0.3), t) + tone(330 * (1 - t * 0.3), t) * 0.5) * env(t, 0.01, 0.4) * 0.18));
 }
 
-export function playSfx(name: SfxName, gain = 1): void {
+export function playSfx(name: SfxName, gain = 1, rate = 1): void {
   try {
     build();
     const ctx = audio();
     if (ctx.state !== 'running') return;
     const src = ctx.createBufferSource();
     src.buffer = buffers.get(name)!;
+    src.playbackRate.value = rate;
     const g = ctx.createGain();
     g.gain.value = gain;
     src.connect(g).connect(sfxBus());
@@ -75,3 +80,7 @@ export function playSfx(name: SfxName, gain = 1): void {
 
 /** Hit sounds sit under the music: about half the level of the interface sounds. */
 export const playHit = (gain = 1) => playSfx('hit', gain * 0.55);
+
+/** Pentatonic steps: each dead-centre hit in a row rings a little higher (up to the 6th). */
+const STEPS = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2];
+export const playCentre = (streak: number) => playSfx('centre', 0.55, STEPS[Math.min(STEPS.length - 1, Math.max(0, streak - 1))]);

@@ -7,6 +7,7 @@
 <p align="center">
   <b>A rhythm game that writes its charts from your music.</b><br>
   Local files or YouTube Music · Windows · Linux · browser
+  <br><b><a href="https://chud-tiles.holy-c.men">Play in your browser: chud-tiles.holy-c.men</a></b>
 </p>
 
 <p align="center">
@@ -38,6 +39,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 - Audio and display calibration, separate offsets for YouTube, and a timing curve after each run with a suggested correction.
 - Practice mode (50 to 100 % speed, one section, looped), autoplay preview, and a chart workshop to touch up any generated chart.
 - Progression: XP, 8 crew ranks, 22 achievements, a personal leaderboard per difficulty, full history.
+- **Online leaderboard**: after a finished song (Easy to Expert), pick a name and publish your score. Each song has its board per difficulty and lane count, and the *Leaderboard* tab lists the 100 latest scores. Nothing is sent unless you publish; it can be switched off in Settings › Game.
 
 **A living universe**
 - Procedural space scenes drawn with Three.js (WebGL2): nebulae, ringed planets, asteroid belts.
@@ -58,7 +60,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 |---|---|---|
 | Windows 10/11 | `Chud-Tiles-Setup-<version>.exe`, `Chud-Tiles-<version>-Portable.exe` | installer in English or French, or a portable exe. Unsigned: SmartScreen asks once (*More info › Run anyway*). |
 | Linux x64 | `.AppImage`, `.tar.gz`, `.deb`, `.rpm` | AppImage: `chmod +x`, then run it. |
-| Browser | static site (`npm run web:build`) served over HTTPS | Chrome or Edge recommended. Local files, and YouTube from a pasted link (tab audio sharing). |
+| Browser | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), or your own static site (`npm run web:build`) served over HTTPS | Chrome or Edge recommended. Local files, and YouTube from a pasted link (tab audio sharing). |
 | macOS | `npm run dist:mac` on a Mac | configuration ready, not built or tested yet. |
 
 Your profile, records and analyses stay on your computer (`%APPDATA%\Chud Tiles` on Windows, `~/.config/Chud Tiles` on Linux, the browser's storage on the web).
@@ -71,7 +73,7 @@ Your profile, records and analyses stay on your computer (`%APPDATA%\Chud Tiles`
 | Pause | `Esc` | Start | pause button |
 | Restart | `Backspace` | — | pause menu |
 
-Judgements: Perfect ±45 ms, Great ±90 ms, Good ±135 ms. Full rules, other lane counts and troubleshooting are in the [player guide](docs/USER-GUIDE.md).
+Judgements: Dead on ±20 ms (hit the tile's centre line: worth half as much again, and a streak bonus), Perfect ±45 ms, Great ±90 ms, Good ±135 ms. Full rules, other lane counts and troubleshooting are in the [player guide](docs/USER-GUIDE.md).
 
 ## Building from source
 
@@ -94,6 +96,7 @@ npm run web:dev    # browser version
 | `npm run dist:linux` | AppImage, .tar.gz, .deb, .rpm (on Linux; from Windows, run `scripts/linux-dist.sh` in WSL) |
 | `npm run dist:mac` | .dmg and .zip (on a Mac) |
 | `npm run web:build` | static site in `dist-web/` |
+| `npm run site:deploy` | builds the site and deploys it with the leaderboard API to Cloudflare (`server/`: Worker + D1; needs `wrangler login`) |
 
 **FFmpeg (optional).** Rare formats (WMA, ALAC, some AIFF) are decoded by FFmpeg. The desktop packages ship Chud Music's LGPL, audio-only FFmpeg build: `scripts/prepare-dist.mjs` copies it from a Chud Music checkout that has its `build/vendor` folder (set `CHUD_MUSIC_DIR`, or write the path in a local `.chud-music-dir` file). Without it, packages are built without FFmpeg and the other formats still work.
 

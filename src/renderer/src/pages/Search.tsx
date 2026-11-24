@@ -1,4 +1,5 @@
 import { tr, trn } from '../i18n';
+import { DesktopCallout } from '../components/DesktopCallout';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Disc3, Link2, ListMusic, Loader2, Play, Radio, Search as SearchIcon, X } from 'lucide-react';
 import type { YtItem, YtSearchKind } from '@shared/types';
@@ -180,6 +181,7 @@ export function Search({ query }: { query?: string }) {
 
   return (
     <div className="page-enter search-page">
+      <DesktopCallout compact />
       <div className="page-head">
         <div>
           <div className="label" style={{ color: 'var(--cyan)' }}>

@@ -19,6 +19,9 @@ export interface PlayRecord {
   accuracy: number;
   maxCombo: number;
   perfect: number;
+  /** Dead-centre hits among the perfects, best streak of them (runs before 1.1 have none). */
+  centre?: number;
+  bestCentreStreak?: number;
   great: number;
   good: number;
   miss: number;

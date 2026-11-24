@@ -72,11 +72,15 @@ Every key and button can be changed in Settings › Controls (one layout per num
 
 **Notes**: tap, **hold** (keep pressed to the end; letting go early breaks the combo), **chord** (several lanes at once).
 
-**Judgements**: Perfect (±45 ms), Great (±90 ms), Good (±135 ms), Miss. Easy has 15 % wider windows. "EARLY" / "LATE" shows under the judgement when a note is not perfect (can be turned off).
+**Judgements**: **Dead on** (±20 ms: the tile's centre line right on the hit line; the tile lights up gold in that band), Perfect (±45 ms), Great (±90 ms), Good (±135 ms), Miss. Easy has 15 % wider windows. "EARLY" / "LATE" shows under the judgement when a note is not perfect (can be turned off).
 
-**Score**: Perfect 1,000, Great 700, Good 350, times the combo multiplier (×2 from 25, ×3 from 50, ×4 from 100). **Ranks**: SS (≥ 99 % with no miss), S (95 %), A (90 %), B (80 %), C (70 %), D.
+**Score**: Dead on 1,500, Perfect 1,000, Great 600, Good 250, times the combo multiplier (×2 from 25, ×3 from 50, ×4 from 100, ×6 from 200, ×8 from 400). Dead-on hits in a row build a **streak**: +10 % per hit, up to +100 %; any other judgement resets it. The track heats up with each combo tier (violet, magenta, orange, gold, white) and a broken combo flashes red. **Ranks**: SS (≥ 99 % with no miss), S (95 %), A (90 %), B (80 %), C (70 %), D.
 
 **Pause**: resume, restart, nudge the audio offset by ±5 ms if notes feel early or late, quit.
+
+**Online leaderboard**: when a song is finished on Easy, Normal, Hard or Expert (not practice, not the autoplay preview, not a live run with predicted notes), the results screen offers to publish the score under a name of your choice (2 to 20 characters). Each song has its own board per difficulty and lane count, shown on the song page; the *Leaderboard* tab lists the 100 latest scores published, by difficulty. Only the name and the run's numbers are sent, and only when you press *Publish*. Settings › Game › Online leaderboard turns it all off.
+
+**Music volume**: on the song page before playing, and in the pause menu during a run (the same setting as Settings › Audio › Music).
 
 **Results**: score, accuracy, max combo, judgement details, timing curve (are your taps early or late on average? a button applies the suggested correction), record, XP earned, achievements, play again, change difficulty, next song in the queue.
 

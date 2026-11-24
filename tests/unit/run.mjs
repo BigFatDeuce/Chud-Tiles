@@ -10,7 +10,8 @@ import { analyzeTrack } from '../../src/core/analysis/analyze.ts';
 import { generateChart } from '../../src/core/chart/generate.ts';
 import { DIFFICULTIES, paramsFor } from '../../src/core/chart/types.ts';
 import { LivePredictor } from '../../src/core/live/predictor.ts';
-import { Judge, rankOf, accuracyOf, starsOf, fullCombo, WINDOWS } from '../../src/core/game/judge.ts';
+import { validateScore, cleanPseudo, songKeyOf, maxScore } from '../../src/shared/leaderboard.ts';
+import { Judge, rankOf, accuracyOf, starsOf, fullCombo, WINDOWS, CENTRE_WINDOW, CENTRE_POINTS, centreBonus, multiplierFor } from '../../src/core/game/judge.ts';
 import { ACHIEVEMENTS, applyRun, emptyProfile, levelOf, titleOf, xpFor, xpToNext } from '../../src/core/game/progress.ts';
 import { fileURLToPath } from 'node:url';
 
@@ -362,8 +363,11 @@ test('judge: windows, combo, multiplier, rank SS', () => {
   const s = j.state;
   ok(s.perfect === 120 && s.miss === 0 && s.maxCombo === 120, 'all perfect');
   ok(rankOf(s) === 'SS' && fullCombo(s) && starsOf(s, true) === 3, 'SS, full combo, 3 stars');
-  // 24 at ×1, 25 at ×2, 50 at ×3, 21 at ×4
-  ok(s.score === 1000 * (24 + 25 * 2 + 50 * 3 + 21 * 4), `score ${s.score}`);
+  // every press 10 ms late: dead centre each time, the streak and the combo grow together
+  let want = 0;
+  for (let k = 1; k <= 120; k++) want += Math.round(CENTRE_POINTS * centreBonus(k) * multiplierFor(k));
+  ok(s.centre === 120 && s.bestCentreStreak === 120, `centre ${s.centre}`);
+  ok(s.score === want, `score ${s.score} (want ${want})`);
   ok(j.done(), 'done');
 });
 
@@ -377,6 +381,38 @@ test('judge: early/late boundaries and misses', () => {
   ok(ev.filter((e) => e.kind === 'miss').length === 2, 'notes 4 and 5 missed');
   ok(j.state.combo === 0 && j.state.miss === 2 && j.state.stray === 1, 'combo broken');
   ok(rankOf(j.state) === 'D', `rank ${rankOf(j.state)}`);
+});
+
+test('judge: dead centre beats a plain perfect, and its streak resets', () => {
+  const j = new Judge([tap(1, 0), tap(2, 0), tap(3, 0), tap(4, 0)], 4);
+  const a = j.press(0, 1 + CENTRE_WINDOW - 0.002);
+  const b = j.press(0, 2 - CENTRE_WINDOW + 0.002);
+  ok(a.centre && b.centre && j.state.centreStreak === 2, 'two dead-centre hits');
+  ok(b.points > a.points, `streak bonus ${a.points} → ${b.points}`);
+  const c = j.press(0, 3 + WINDOWS.perfect - 0.002);
+  ok(c.judgement === 'perfect' && !c.centre && j.state.centreStreak === 0, 'off-centre perfect resets the streak');
+  ok(c.points < a.points, `plain perfect ${c.points} < ${a.points}`);
+  ok(j.state.perfect === 3 && j.state.centre === 2, 'centre hits count among the perfects');
+});
+
+test('leaderboard: score checks', () => {
+  const good = { pseudo: '  Chud   Master ', songKey: 'yt:dQw4w9WgXcQ', title: 'Song', artist: 'Artist', source: 'youtube', difficulty: 'hard', lanes: 4, score: 1_200_000, accuracy: 0.97, maxCombo: 300, centre: 200, perfect: 280, great: 20, good: 0, miss: 0, holdOk: 30, holdBreak: 0, rank: 'S', fullCombo: true, chartLevel: 12, duration: 180, version: '1.0.0' };
+  const v = validateScore(good);
+  ok(v.ok && v.value.pseudo === 'Chud Master', `valid run (${v.ok ? v.value.pseudo : v.error})`);
+  ok(cleanPseudo('<script>') === 'script' && cleanPseudo('a') === null && cleanPseudo('x'.repeat(21)) === null, 'pseudo cleaned');
+  const no = (patch, why) => {
+    const r = validateScore({ ...good, ...patch });
+    ok(!r.ok, `${why} refused`);
+  };
+  no({ difficulty: 'custom' }, 'custom difficulty');
+  no({ lanes: 9 }, 'lane count');
+  no({ score: maxScore(300, 30) + 1 }, 'impossible score');
+  no({ centre: 281 }, 'more dead-on than perfects');
+  no({ maxCombo: 400 }, 'combo longer than the notes');
+  no({ fullCombo: true, miss: 1 }, 'full combo with a miss');
+  no({ songKey: 'http://evil' }, 'song key');
+  no({ accuracy: 1.5 }, 'accuracy');
+  ok(songKeyOf({ title: 'Artist - Song (Official Video)', artist: 'Artist', source: 'local' }) === songKeyOf({ title: 'Song', artist: 'Artist', source: 'file' }), 'same song, same board');
 });
 
 test('judge: a press takes the earliest pending note of the lane', () => {

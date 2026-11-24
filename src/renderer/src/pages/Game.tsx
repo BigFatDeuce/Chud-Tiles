@@ -1,7 +1,7 @@
 import { tr } from '../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, RotateCcw, LogOut, Minus, Plus } from 'lucide-react';
-import { accuracyOf } from '@core/game/judge';
+import { accuracyOf, centreBonus } from '@core/game/judge';
 import { LocalPlayer } from '../audio/local-player';
 import type { SongPlayer } from '../audio/player';
 import { GameSession, type HudEvent, type SessionState } from '../game/session';
@@ -17,6 +17,7 @@ import { learnFrom, LEARN_COVERAGE } from '../yt/learn';
 import { LiveFeed } from '../game/live';
 import { hashString } from '@core/util/rng';
 import { toast } from '../store/toasts';
+import { MusicVolume } from '../components/MusicVolume';
 
 export function Game({ game, player: external }: { game: GameParams; player?: SongPlayer }) {
   const surface = useRef<HTMLDivElement>(null);
@@ -33,10 +34,14 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
   const fpsEl = useRef<HTMLDivElement>(null);
   const waitEl = useRef<HTMLDivElement>(null);
   const keysEl = useRef<HTMLDivElement>(null);
+  const streakEl = useRef<HTMLDivElement>(null);
+  const popsEl = useRef<HTMLDivElement>(null);
+  const heatEl = useRef<HTMLDivElement>(null);
+  const breakEl = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [state, setState] = useState<SessionState>('intro');
   const [count, setCount] = useState<{ n: number; k: number } | null>(null);
-  const [milestone, setMilestone] = useState<{ combo: number; k: number } | null>(null);
+  const [milestone, setMilestone] = useState<{ combo: number; tier: number; mult: number; k: number } | null>(null);
   const [intro, setIntro] = useState(true);
   const [offset, setOffset] = useState(useSettings.getState().audioOffsetMs);
   const settings = useSettings.getState();
@@ -102,6 +107,7 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
       if (comboEl.current) Object.assign(comboEl.current.style, { left: `${c.x}px`, top: `${c.y}px` });
       if (judgeEl.current) Object.assign(judgeEl.current.style, { left: `${j.x}px`, top: `${j.y}px` });
       if (offEl.current) Object.assign(offEl.current.style, { left: `${j.x}px`, top: `${j.y + 22}px` });
+      if (streakEl.current) Object.assign(streakEl.current.style, { left: `${j.x}px`, top: `${j.y - 40}px` });
       if (energyEl.current) Object.assign(energyEl.current.style, { left: `${hit.x + half + 22}px`, top: `${top.y}px`, height: `${Math.max(80, hit.y - top.y)}px` });
       // bindings: under each lane, just below the hit line
       keysEl.current?.querySelectorAll<HTMLElement>('[data-lane]').forEach((el) => {
@@ -124,12 +130,52 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
     window.addEventListener('gamepadconnected', onPad);
     let comboShown = 0;
     let judgeKey = 0;
+    // the score rolls up to its value (see tick); big gains make it jump
+    let scoreShown = 0;
+    let scoreTarget = 0;
+    let multShown = 1;
+    let tierShown = 0;
+    let popNext = 0;
+    const retrigger = (el: HTMLElement, cls: string) => {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
+    };
+    /** "+3 000" rising from the lane of a dead-centre hit. */
+    const pop = (lane: number, points: number, streak: number) => {
+      const box = popsEl.current;
+      if (!box) return;
+      const el = box.children[popNext++ % box.children.length] as HTMLElement | undefined;
+      if (!el) return;
+      const p = pf.screenOf(lane, 0.25);
+      el.textContent = `+${fmtScore(points)}`;
+      el.style.left = `${p.x}px`;
+      el.style.top = `${p.y}px`;
+      el.style.fontSize = `${Math.min(26, 15 + streak * 0.8)}px`;
+      retrigger(el, 'go');
+    };
     const update = (e: HudEvent) => {
       if (e.type === 'judge' || e.type === 'reset') {
         const s = e.s;
-        if (scoreEl.current) scoreEl.current.textContent = fmtScore(s.score);
+        scoreTarget = s.score;
+        if (e.type === 'reset') scoreShown = s.score;
+        if (e.type === 'judge' && (e.e.points ?? 0) >= 6000 && scoreEl.current) retrigger(scoreEl.current, 'jump');
         if (accEl.current) accEl.current.textContent = fmtPct(accuracyOf(s));
-        if (multEl.current) multEl.current.textContent = s.multiplier > 1 ? `×${s.multiplier}` : '';
+        if (multEl.current && s.multiplier !== multShown) {
+          multEl.current.textContent = s.multiplier > 1 ? `×${s.multiplier}` : '';
+          if (s.multiplier > multShown) retrigger(multEl.current, 'bump');
+          multShown = s.multiplier;
+        }
+        // dead-centre streak: shown from 2 in a row, with its bonus
+        if (streakEl.current && (e.type === 'reset' || e.e.kind === 'hit' || e.e.kind === 'miss' || e.e.kind === 'hold-break')) {
+          const el = streakEl.current;
+          if (s.centreStreak >= 2) {
+            el.textContent = tr('Série pile ×{n} · +{p} %', { n: s.centreStreak, p: Math.round((centreBonus(s.centreStreak) - 1) * 100) });
+            el.style.opacity = '1';
+            el.dataset.hot = s.centreStreak >= 11 ? '2' : s.centreStreak >= 6 ? '1' : '0';
+            retrigger(el, 'tick');
+          } else el.style.opacity = '0';
+        }
         if (comboN.current && comboEl.current) {
           if (s.combo !== comboShown) {
             comboShown = s.combo;
@@ -149,12 +195,14 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
           const j = ev.kind === 'hit' ? ev.judgement : ev.kind === 'miss' || ev.kind === 'hold-break' ? 'miss' : null;
           if (j && judgeEl.current) {
             const el = judgeEl.current;
-            el.textContent = j === 'perfect' ? tr('Parfait') : j === 'great' ? tr('Super') : j === 'good' ? tr('Bien') : ev.kind === 'hold-break' ? tr('Lâché') : tr('Raté');
-            el.className = `judgement ${j}`;
+            const k = ev.centre ? 'centre' : j;
+            el.textContent = ev.centre ? tr('Pile !') : j === 'perfect' ? tr('Parfait') : j === 'great' ? tr('Super') : j === 'good' ? tr('Bien') : ev.kind === 'hold-break' ? tr('Lâché') : tr('Raté');
+            el.className = `judgement ${k}`;
             void el.offsetWidth;
-            el.className = `judgement ${j} show`;
+            el.className = `judgement ${k} show`;
             judgeKey++;
           }
+          if (ev.kind === 'hit' && ev.centre && ev.points) pop(ev.lane, ev.points, s.centreStreak);
           if (ev.kind === 'hit' && ev.offset !== undefined && offEl.current && useSettings.getState().showOffsets && ev.judgement !== 'perfect') {
             offEl.current.textContent = ev.offset < 0 ? tr('TÔT') : tr('TARD');
             offEl.current.style.opacity = '1';
@@ -165,8 +213,18 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
           }
         }
       } else if (e.type === 'milestone') {
-        setMilestone({ combo: e.combo, k: Date.now() });
+        setMilestone({ combo: e.combo, tier: e.tier, mult: session.judge.state.multiplier, k: Date.now() });
         playSfx('milestone', 0.8);
+      } else if (e.type === 'tier') {
+        tierShown = e.tier;
+        if (comboEl.current) comboEl.current.dataset.tier = String(e.tier);
+        if (heatEl.current) heatEl.current.dataset.tier = String(e.tier);
+        if (multEl.current) multEl.current.dataset.tier = String(e.tier);
+      } else if (e.type === 'break') {
+        if (breakEl.current) {
+          breakEl.current.style.setProperty('--k', String(Math.min(1, 0.35 + e.combo / 120)));
+          retrigger(breakEl.current, 'go');
+        }
       } else if (e.type === 'state') {
         setState(e.state);
         if (e.state === 'failed') playSfx('fail');
@@ -185,6 +243,10 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
       }
     };
     const off = session.on(update);
+    // the music volume can change during the run (pause menu): the YouTube player follows it
+    const offVol = useSettings.subscribe((s, prev) => {
+      if (s.volume !== prev.volume && player instanceof YouTubePlayer) player.setVolume(s.volume.master * s.volume.music);
+    });
     session.start(surface.current!);
     update({ type: 'reset', s: session.judge.state });
     place();
@@ -195,6 +257,13 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
     let raf = 0;
     const tick = () => {
       if (barEl.current) barEl.current.style.width = `${session.progress() * 100}%`;
+      if (scoreShown !== scoreTarget && scoreEl.current) {
+        scoreShown += Math.max(1, (scoreTarget - scoreShown) * 0.22);
+        if (scoreShown > scoreTarget) scoreShown = scoreTarget;
+        scoreEl.current.textContent = fmtScore(Math.round(scoreShown));
+      }
+      // the heat glow breathes with the music
+      if (heatEl.current && tierShown) heatEl.current.style.setProperty('--b', engine.cosmos.react.beat.toFixed(2));
       if (showKeys === 'auto' && keysMode === 'keyboard' && [...(navigator.getGamepads?.() ?? [])].some((g) => g?.buttons.some((b) => b.pressed))) setKeysMode('pad');
       if (fpsEl.current) fpsEl.current.textContent = tr('{fps} i/s · pire {ms} ms', { fps: engine.stats.fps.toFixed(0), ms: engine.stats.worstMs.toFixed(1) });
       if (waitEl.current) {
@@ -226,6 +295,7 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
     document.addEventListener('visibilitychange', vis);
     return () => {
       off();
+      offVol();
       clearTimeout(t1);
       clearTimeout(t2);
       cancelAnimationFrame(raf);
@@ -288,13 +358,21 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
           </div>
         </div>
       </div>
-      <div className="combo" ref={comboEl} style={{ opacity: 0 }}>
+      <div className="heat" ref={heatEl} data-tier="0" />
+      <div className="break-flash" ref={breakEl} />
+      <div className="combo" ref={comboEl} data-tier="0" style={{ opacity: 0 }}>
         <div className="n" ref={comboN}>
           0
         </div>
         <div className="w">{tr('COMBO')}</div>
       </div>
       <div className="judgement" ref={judgeEl} />
+      <div className="centre-streak" ref={streakEl} style={{ opacity: 0 }} />
+      <div className="pops" ref={popsEl} aria-hidden>
+        {Array.from({ length: 10 }, (_, i) => (
+          <span key={i} className="pop" />
+        ))}
+      </div>
       <div className="offset-tick" ref={offEl} style={{ opacity: 0, transition: 'opacity 0.15s' }} />
       {settings.fail && !game.practice && (
         <div className="energy" ref={energyEl}>
@@ -308,9 +386,12 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
         </div>
       )}
       {milestone && (
-        <div key={milestone.k} className="milestone" onAnimationEnd={() => setMilestone(null)}>
+        <div key={milestone.k} className="milestone" data-tier={milestone.tier} onAnimationEnd={() => setMilestone(null)}>
           {milestone.combo}
-          <small>{tr('COMBO')}</small>
+          <small>
+            {tr('COMBO')}
+            {milestone.mult > 1 ? ` · ×${milestone.mult}` : ''}
+          </small>
         </div>
       )}
       {count && (
@@ -346,7 +427,10 @@ export function Game({ game, player: external }: { game: GameParams; player?: So
             <button className="btn big" onClick={() => sessionRef.current?.restart()}>
               <RotateCcw size={18} /> {tr('Recommencer')}
             </button>
-            <div className="opt-row" style={{ borderTop: '1px solid var(--line)', marginTop: 8 }}>
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: 8 }}>
+              <MusicVolume />
+            </div>
+            <div className="opt-row">
               <div className="what">
                 <b>{tr('Décalage audio')}</b>
                 <small>{tr('Si les notes semblent en avance ou en retard')}</small>

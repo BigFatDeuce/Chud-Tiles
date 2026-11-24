@@ -39,6 +39,8 @@ export function migrateSettings(persisted: unknown, version: number): Partial<Se
     for (const n of Object.keys(OLD_KEYS).map(Number)) if (JSON.stringify(keys[n]) === JSON.stringify(OLD_KEYS[n])) keys[n] = DEFAULT_KEYS[n]!;
     s.keys = keys;
   }
+  // 1.1: a YouTube song not learned yet is played normally (listened to first, full chart), not live
+  if (version < 3 && s.ytMode === 'live') s.ytMode = 'learn-first';
   return s;
 }
 
@@ -76,6 +78,14 @@ export interface Settings {
   showFps: boolean;
   /** Lane bindings written under the hit line: off, the keyboard's, the controller's, or the last used. */
   showKeys: 'off' | 'auto' | 'keyboard' | 'pad';
+  /** Online leaderboard: boards shown and scores publishable (nothing is sent unless asked). */
+  online: boolean;
+  /** Desktop: look for a new version at launch (and install it when the build can). */
+  checkUpdates: boolean;
+  /** Publish the score by itself at the end of a ranked run (pseudo chosen before playing). */
+  autoPublish: boolean;
+  /** Last pseudo used to publish a score. */
+  pseudo: string;
   reducedMotion: boolean;
   autoPause: boolean;
   showOffsets: boolean;
@@ -109,10 +119,14 @@ export const DEFAULTS: Settings = {
   effects: 1,
   showFps: false,
   showKeys: 'off',
+  online: true,
+  checkUpdates: true,
+  autoPublish: false,
+  pseudo: '',
   reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   autoPause: true,
   showOffsets: true,
-  ytMode: 'live',
+  ytMode: 'learn-first',
   ytSource: 'download',
   ytOffsetMs: 0,
   calibrated: false,
@@ -133,7 +147,7 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'chud-tiles-settings',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => migrateSettings(persisted, version) as SettingsStore,
       merge: (persisted, current) => ({ ...current, ...(persisted as Partial<Settings>), keys: { ...DEFAULT_KEYS, ...(persisted as Settings)?.keys }, pad: { ...DEFAULT_PAD, ...(persisted as Settings)?.pad } }),
     },

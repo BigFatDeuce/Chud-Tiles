@@ -20,6 +20,6 @@ npx electron-vite build
 npx electron-builder --linux --publish never --config electron-builder.config.cjs
 mkdir -p "$SRC/dist"
 shopt -s nullglob
-out=(dist/*.AppImage dist/*.deb dist/*.rpm dist/*.tar.gz)
+out=(dist/*.AppImage dist/*.deb dist/*.rpm dist/*.tar.gz dist/latest-linux.yml)
 cp "${out[@]}" "$SRC/dist/"
 ls -la "${out[@]}"

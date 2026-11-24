@@ -2,7 +2,7 @@
   "name": "chud-tiles",
   "productName": "Chud Tiles",
   "desktopName": "chud-tiles.desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Jeu de rythme qui transforme votre musique (YouTube Music, fichiers locaux) en partition jouable",
   "private": true,
   "main": "out/main/index.js",
@@ -25,6 +25,7 @@
     "web:dev": "vite --config vite.web.config.ts",
     "web:build": "vite build --config vite.web.config.ts",
     "web:preview": "vite preview --config vite.web.config.ts",
+    "site:deploy": "vite build --config vite.web.config.ts && npx -y wrangler@4 deploy -c server/wrangler.jsonc",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test:unit": "node tests/unit/run.mjs",
     "test:e2e": "electron-vite build && node tests/e2e/run.mjs",
@@ -42,6 +43,7 @@
   "dependencies": {
     "@ghostery/adblocker": "2.20.3",
     "@ghostery/adblocker-electron": "2.20.3",
+    "electron-updater": "^6.8.11",
     "music-metadata": "12.8.1",
     "youtubei.js": "18.3.0"
   },

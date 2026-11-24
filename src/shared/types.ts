@@ -140,3 +140,14 @@ export type YtCommand =
   | { op: 'seek'; t: number }
   | { op: 'volume'; v: number; muted: boolean }
   | { op: 'rate'; rate: number };
+
+/** Desktop updates (checked at launch). */
+export interface UpdateInfo {
+  status: 'idle' | 'checking' | 'none' | 'available' | 'downloading' | 'ready' | 'error';
+  version?: string;
+  /** Download page (builds that cannot update themselves). */
+  url?: string;
+  /** 0–1 while downloading. */
+  progress?: number;
+  error?: string;
+}

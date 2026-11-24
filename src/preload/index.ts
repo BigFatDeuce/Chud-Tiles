@@ -60,6 +60,11 @@ const api: CtBridge = {
       onStatus: (cb) => subscribe('adblock:status', cb),
     },
   },
+  updates: {
+    check: () => ipcRenderer.invoke('update:check'),
+    install: () => ipcRenderer.send('update:install'),
+    onState: (cb) => subscribe('update:state', cb),
+  },
   ytdlp: {
     status: () => ipcRenderer.invoke('ytdlp:status'),
     install: () => ipcRenderer.invoke('ytdlp:install'),

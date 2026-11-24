@@ -6,6 +6,8 @@ export interface Toast {
   kind: 'info' | 'error' | 'gold';
   title: string;
   text?: string;
+  /** A button inside the toast. */
+  action?: { label: string; run: () => void };
 }
 
 interface ToastStore {
