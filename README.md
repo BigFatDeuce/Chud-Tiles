@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icons/png/icon-256.png" width="112" alt="">
+  <img src="build/logo/svg/logo.svg" width="160" alt="Chud Tiles logo">
 </p>
 
 <h1 align="center">Chud Tiles</h1>
@@ -11,13 +11,32 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><img src="https://img.shields.io/github/v/release/BigFatDeuce/Chud-Tiles?label=release&color=8b5cf6" alt="Latest release"></a>
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><img src="https://img.shields.io/github/downloads/BigFatDeuce/Chud-Tiles/total?color=38d6ff" alt="Downloads"></a>
   <a href="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml"><img src="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   &nbsp;·&nbsp; <a href="README.fr.md">Version française</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/gameplay.gif" width="560" alt="Expert, 6 lanes: a 200 combo, dead-on hits, the lanes on fire">
+</p>
+
+<p align="center">
+  <a href= + REL + ><b>⬇ Download for Windows or Linux</b></a> &nbsp;·&nbsp;
+  <a href="https://chud-tiles.holy-c.men"><b>▶ Play in your browser</b></a>
 </p>
 
 ![The bridge, Chud Tiles' home screen](docs/images/home.jpg)
 
 Notes slide down glowing lanes toward a hit line: press the lane when they touch it. Nobody charts the songs by hand. Chud Tiles listens to each song (tempo, beats, kick, snare, cymbals, sustained sounds, choruses) and builds a playable chart for every difficulty.
+
+## New in 1.1
+
+- **Hit them dead centre.** Bigger tiles, and a narrow centre band on each one: a note hit dead on (±20 ms) scores far more, and a streak of them adds up to +100 %.
+- **Juice.** Combo tiers from 25 to 400 set the lanes on fire, with shock waves, beams and a flash when a combo breaks.
+- **Online leaderboard** on [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men): a board per song and difficulty, the 100 latest scores, a name chosen before or after the run.
+- **Updates** checked at launch: the Windows installer and the AppImage update themselves.
+- Music volume before the run and in the pause menu; YouTube songs play a normal run (full chart) by default.
 
 ## Features
 
@@ -51,7 +70,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 
 | | |
 |---|---|
-| ![A run in progress](docs/images/gameplay.jpg) | ![Song page with the five difficulties](docs/images/song.jpg) |
+| ![A run on Expert, 6 lanes: 256 combo, dead-on streak](docs/images/gameplay.jpg) | ![Song page: five difficulties, lanes, music volume, online board](docs/images/song.jpg) |
 | ![Chart workshop (French interface)](docs/images/editor.jpg) | ![Logbook: level, statistics, achievements (French interface)](docs/images/logbook.jpg) |
 
 ## Platforms

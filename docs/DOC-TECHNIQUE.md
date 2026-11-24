@@ -172,6 +172,7 @@ Le site `chud-tiles.holy-c.men` est un Worker Cloudflare : il sert la version na
 | `GET /api/scores/recent?difficulty=all\|easy\|normal\|hard\|expert` | les 100 derniers scores |
 | `GET /api/scores/song?key=&difficulty=&lanes=` | le classement d'un morceau : meilleur score de chaque pseudo |
 | `POST /api/scores` | publie un score (corps JSON `ScoreSubmission`) |
+| `GET /api/yt/title?id=` | titre et chaîne d'une vidéo YouTube (oEmbed), pour la version navigateur qui ne peut pas les lire ; un score YouTube publié sans titre le reçoit aussi |
 
 - Un morceau est identifié par `yt:<id vidéo>` ou `s:<artiste>|<titre>` nettoyés (`songKeyOf`) : un même morceau a le même classement d'un joueur à l'autre. Classement par morceau, difficulté et nombre de colonnes.
 - Seuls comptent les morceaux terminés en Facile à Expert, hors entraînement, aperçu et parties en direct (notes prédites). Le serveur refuse les scores incohérents (`validateScore` : comptes de notes, combo, score maximal possible, pseudo).
@@ -204,4 +205,4 @@ Les tests de bout en bout tournent dans des profils temporaires isolés, dans un
 | macOS | `npm run dist:mac` sur un Mac | .dmg, .zip (non signés : la signature Apple demande un compte développeur) |
 | Navigateur | `npm run web:build` | `dist-web/`, site statique (HTTPS ou `localhost` : la capture d'onglet et l'accès aux fichiers l'exigent) |
 
-`prepare-dist.mjs` génère les icônes si besoin (`build/logo.svg` → PNG, ICO, ICNS, favicon), **copie** le FFmpeg LGPL de Chud Music (sources désignées par `CHUD_MUSIC_DIR`, par le fichier local non versionné `.chud-music-dir` ou par un dossier `Chud-Music` voisin ; sinon Chud Music installé sous Windows) sans jamais écrire dans son dossier, et écrit `build/THIRD-PARTY-NOTICES.txt`.
+`prepare-dist.mjs` copie les icônes si besoin (kit du logo `build/logo/` → PNG, ICO, ICNS, favicon, logos de l’interface ; rien n’est redessiné), **copie** le FFmpeg LGPL de Chud Music (sources désignées par `CHUD_MUSIC_DIR`, par le fichier local non versionné `.chud-music-dir` ou par un dossier `Chud-Music` voisin ; sinon Chud Music installé sous Windows) sans jamais écrire dans son dossier, et écrit `build/THIRD-PARTY-NOTICES.txt`.

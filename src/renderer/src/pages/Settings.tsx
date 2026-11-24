@@ -12,7 +12,7 @@ import { engine, type Quality } from '../gfx/engine';
 import * as db from '../storage/db';
 import { go } from '../store/nav';
 import { toast, toastError } from '../store/toasts';
-import { Range, Seg, Toggle } from '../components/ui';
+import { Logo, Range, Seg, Toggle } from '../components/ui';
 import { playSfx } from '../audio/sfx';
 import { fmtNum, lang, LANGS, locale, resolve, systemLang, tr, trn } from '../i18n';
 
@@ -808,7 +808,8 @@ function AboutTab() {
     <>
       <h2 className="tab-title">{tr('À propos')}</h2>
       <div className="about">
-        <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '0.2em' }}>
+        <Logo size={128} />
+        <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '0.2em', marginTop: 10 }}>
           CHUD TILES
         </div>
         <div className="muted">

@@ -3,30 +3,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Archive, Brain, CalendarDays, Circle, CircleDot, Cloud, Compass, Crosshair, Disc3, Flame, Gauge, Magnet, Moon, Music2, Orbit, Radio, Rocket, SatelliteDish, Sparkles, Star, Sunrise, Telescope, Timer, Zap, type LucideIcon } from 'lucide-react';
 import { playSfx } from '../audio/sfx';
 import { useToasts } from '../store/toasts';
+import logoFull from '../assets/logo.svg';
+import logoSmall from '../assets/logo-small.svg';
 
+/** The Chud Tiles logo (build/logo): the full drawing from 96 px, the simplified one below. */
 export function Logo({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-label={tr('Chud Tiles')}>
-      <defs>
-        <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#4fd6ff" />
-          <stop offset="0.55" stopColor="#8f6bff" />
-          <stop offset="1" stopColor="#ff5fd2" />
-        </linearGradient>
-        <radialGradient id="lg-glow" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#8f6bff" stopOpacity="0.45" />
-          <stop offset="1" stopColor="#8f6bff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle cx="24" cy="24" r="22" fill="url(#lg-glow)" />
-      {/* the ring passes behind the planet: drawn in two halves */}
-      <path d="M4.6 30.2 A21 7 -24 0 1 41.6 13.5" fill="none" stroke="url(#lg-logo)" strokeWidth="1.6" opacity="0.55" />
-      <circle cx="24" cy="24" r="12" fill="#0a0c24" stroke="url(#lg-logo)" strokeWidth="2.2" />
-      <rect x="18.2" y="16.5" width="3.4" height="9.5" rx="1.7" fill="#fff" />
-      <rect x="26.4" y="21.5" width="3.4" height="9.5" rx="1.7" fill="url(#lg-logo)" />
-      <path d="M41.6 13.5 A21 7 -24 0 1 4.6 30.2" fill="none" stroke="url(#lg-logo)" strokeWidth="1.6" />
-    </svg>
-  );
+  return <img className="logo-img" src={size >= 96 ? logoFull : logoSmall} width={size} height={size} alt={tr('Chud Tiles')} draggable={false} />;
 }
 
 export function Cover({ src, size = '', icon = 'music' }: { src?: string | null; size?: '' | 'md' | 'lg'; icon?: 'music' | 'disc' }) {

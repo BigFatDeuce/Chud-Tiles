@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icons/png/icon-256.png" width="112" alt="">
+  <img src="build/logo/svg/logo.svg" width="160" alt="Logo de Chud Tiles">
 </p>
 
 <h1 align="center">Chud Tiles</h1>
@@ -11,13 +11,32 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><img src="https://img.shields.io/github/v/release/BigFatDeuce/Chud-Tiles?label=release&color=8b5cf6" alt="Dernière version"></a>
+  <a href="https://github.com/BigFatDeuce/Chud-Tiles/releases/latest"><img src="https://img.shields.io/github/downloads/BigFatDeuce/Chud-Tiles/total?color=38d6ff" alt="Téléchargements"></a>
   <a href="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml"><img src="https://github.com/BigFatDeuce/Chud-Tiles/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   &nbsp;·&nbsp; <a href="README.md">English version</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/gameplay.gif" width="560" alt="Expert, 6 pistes : un combo de 200, des frappes pile au centre, les pistes en feu">
+</p>
+
+<p align="center">
+  <a href= + REL + ><b>⬇ Télécharger pour Windows ou Linux</b></a> &nbsp;·&nbsp;
+  <a href="https://chud-tiles.holy-c.men"><b>▶ Jouer dans le navigateur</b></a>
 </p>
 
 ![Le pont, l'écran d'accueil de Chud Tiles](docs/images/accueil.jpg)
 
 Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez sur la piste quand elles la touchent. Personne n'écrit les partitions à la main. Chud Tiles écoute chaque morceau (tempo, temps, grosse caisse, caisse claire, cymbales, sons tenus, refrains) et en tire une partition jouable pour chaque difficulté.
+
+## Nouveau dans la 1.1
+
+- **Visez le centre.** Des tuiles plus grandes, avec une bande étroite au milieu : une note frappée pile au centre (±20 ms) rapporte bien plus, et une série de frappes pile ajoute jusqu'à +100 %.
+- **Du spectacle.** Des paliers de combo de 25 à 400 embrasent les pistes : ondes de choc, faisceaux, et un éclair quand le combo casse.
+- **Classement en ligne** sur [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men) : un tableau par morceau et difficulté, les 100 derniers scores, un pseudo choisi avant ou après la partie.
+- **Mises à jour** cherchées au lancement : l'installeur Windows et l'AppImage se mettent à jour seuls.
+- Volume de la musique avant la partie et dans le menu pause ; les morceaux YouTube se jouent en partie normale (partition complète) par défaut.
 
 ## Ce qu'il sait faire
 
@@ -51,7 +70,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 
 | | |
 |---|---|
-| ![Une partie en cours (interface anglaise)](docs/images/gameplay.jpg) | ![Page d'un morceau et ses cinq difficultés (interface anglaise)](docs/images/song.jpg) |
+| ![Une partie en Expert, 6 pistes : combo de 256, série pile au centre](docs/images/partie.jpg) | ![Page d'un morceau : cinq difficultés, pistes, volume, classement en ligne](docs/images/morceau.jpg) |
 | ![L'atelier de partitions](docs/images/editor.jpg) | ![Le carnet de bord : niveau, statistiques, succès](docs/images/logbook.jpg) |
 
 ## Plateformes

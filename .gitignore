@@ -11,3 +11,6 @@ scripts/.i18n-missing.json
 scripts/.i18n-report.txt
 .chud-music-dir
 .wrangler/
+
+# trailer (its music is not ours to publish)
+trailer/

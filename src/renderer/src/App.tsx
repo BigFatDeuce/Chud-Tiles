@@ -146,11 +146,17 @@ export function App() {
     }
     // minimised or hidden window: nothing to draw
     const offVisible = platform.window?.onVisible?.((v) => (engine.hidden = !v));
+    // a hand on the mouse or the keyboard, or the focus: the window is on screen whatever was said
+    const seen = () => {
+      if (engine.hidden && document.visibilityState === 'visible') engine.hidden = false;
+    };
+    for (const ev of ['focus', 'pointermove', 'keydown'] as const) window.addEventListener(ev, seen, { passive: true });
     return () => {
       window.removeEventListener('pointermove', move);
       offGpu?.();
       offVisible?.();
       offUpdate?.();
+      for (const ev of ['focus', 'pointermove', 'keydown'] as const) window.removeEventListener(ev, seen);
     };
   }, []);
 

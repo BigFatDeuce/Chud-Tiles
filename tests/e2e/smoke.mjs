@@ -20,6 +20,23 @@ try {
     await shot(win, `smoke-${p}`);
   }
   suite.check('pages rendered', true);
+
+  // minimised, then back (normal and maximised window): images are drawn again
+  const drawn = async () => {
+    const f0 = await win.evaluate(() => window.__ct.engine.stats.frames);
+    await sleep(1200);
+    return (await win.evaluate(() => window.__ct.engine.stats.frames)) - f0;
+  };
+  for (const maxed of [false, true]) {
+    await app.evaluate(({ BrowserWindow }, m) => (m ? BrowserWindow.getAllWindows()[0].maximize() : BrowserWindow.getAllWindows()[0].unmaximize()), maxed);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
+    await sleep(800);
+    const hidden = await win.evaluate(() => window.__ct.engine.hidden);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
+    await sleep(500);
+    const n = await drawn();
+    suite.check(`drawing resumes after minimise${maxed ? ' (maximised)' : ''}`, hidden && n > 10, `hidden while minimised: ${hidden}, images after: ${n}`);
+  }
 } catch (e) {
   suite.check('no exception', false, String(e?.stack ?? e));
 } finally {

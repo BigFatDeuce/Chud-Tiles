@@ -3,10 +3,12 @@
 //   GET  /api/scores/recent?difficulty=     the 100 latest scores (finished songs, ranked difficulties)
 //   GET  /api/scores/song?key=&difficulty=&lanes=   a song's board: best score of each player
 //   POST /api/scores                        publishes a score (checked by validateScore)
+//   GET  /api/yt/title?id=                  a YouTube video's title and channel (oEmbed): the browser
+//                                           version cannot read them itself
 // Players are not identified: a pseudo is a name, nothing more. The address of the sender is only
 // kept as a salted hash, for one hour, to limit how often scores can be sent.
 
-import { BOARD_DIFFICULTIES, pseudoKey, validateScore, type PublishResult, type ScoreRow } from '../../src/shared/leaderboard';
+import { BOARD_DIFFICULTIES, isPlaceholderTitle, pseudoKey, validateScore, type PublishResult, type ScoreRow } from '../../src/shared/leaderboard';
 
 interface D1Result<T> {
   results: T[];
@@ -35,6 +37,20 @@ const CORS = {
 
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', ...CORS, ...extra } });
+
+const YT_ID = /^[\w-]{11}$/;
+
+/** Title and channel of a YouTube video, from YouTube's public oEmbed (cached a day by Cloudflare). */
+async function ytTitle(id: string): Promise<{ title: string; artist: string | null } | null> {
+  if (!YT_ID.test(id)) return null;
+  const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`, {
+    cf: { cacheTtl: 86400, cacheEverything: true },
+  } as RequestInit);
+  if (!res.ok) return null;
+  const j = (await res.json()) as { title?: string; author_name?: string };
+  if (!j.title) return null;
+  return { title: j.title.slice(0, 200), artist: j.author_name ? j.author_name.replace(/ - Topic$/, '').slice(0, 200) : null };
+}
 
 const COLS = 'id, pseudo, song_key AS songKey, title, artist, source, difficulty, lanes, score, accuracy, max_combo AS maxCombo, centre, perfect, great, good, miss, hold_ok AS holdOk, hold_break AS holdBreak, rank, full_combo AS fullCombo, chart_level AS chartLevel, duration, at';
 
@@ -84,6 +100,14 @@ async function publish(req: Request, env: Env): Promise<Response> {
   const v = validateScore(body);
   if (!v.ok) return json({ error: v.error }, 400);
   const s = v.value;
+  // YouTube songs opened from a bare link (browser version) arrive without their title: ask YouTube
+  if (s.songKey.startsWith('yt:') && isPlaceholderTitle(s.title)) {
+    const info = await ytTitle(s.songKey.slice(3)).catch(() => null);
+    if (info) {
+      s.title = info.title;
+      s.artist = s.artist ?? info.artist;
+    }
+  }
   // how often: per sender address (salted hash, forgotten after an hour)
   const now = Date.now();
   const ip = req.headers.get('cf-connecting-ip') ?? 'unknown';
@@ -117,6 +141,10 @@ export default {
       if (req.method === 'GET' && url.pathname === '/api/scores/song') return await board(url, env);
       if (req.method === 'POST' && url.pathname === '/api/scores') return await publish(req, env);
       if (req.method === 'GET' && url.pathname === '/api/health') return json({ ok: true });
+      if (req.method === 'GET' && url.pathname === '/api/yt/title') {
+        const info = await ytTitle(url.searchParams.get('id') ?? '').catch(() => null);
+        return info ? json(info, 200, { 'cache-control': 'public, max-age=86400' }) : json({ error: 'not found' }, 404);
+      }
       return json({ error: 'not found' }, 404);
     } catch (e) {
       console.error('api', e);

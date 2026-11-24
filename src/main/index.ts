@@ -130,14 +130,13 @@ function createWindow(): BrowserWindow {
   win.on('maximize', persist);
   win.on('unmaximize', persist);
   // a minimised or hidden window draws nothing (the page is never throttled, see backgroundThrottling)
-  const visible = (v: boolean) => () => {
-    if (!win.isDestroyed()) win.webContents.send('win:visible', v);
+  // Windows does not always say "restore" when a maximised window comes back from the taskbar (it
+  // can say "maximize", or only "focus"): the state is read again on every such event.
+  const tell = () => {
+    if (!win.isDestroyed()) win.webContents.send('win:visible', win.isVisible() && !win.isMinimized());
   };
   setUpdateWindow(win);
-  win.on('minimize', visible(false));
-  win.on('hide', visible(false));
-  win.on('restore', visible(true));
-  win.on('show', visible(true));
+  for (const ev of ['minimize', 'hide', 'restore', 'show', 'maximize', 'unmaximize', 'focus', 'resize'] as const) win.on(ev as 'show', tell);
   win.on('enter-full-screen', () => {
     persist();
     win.webContents.send('win:fullscreen', true);

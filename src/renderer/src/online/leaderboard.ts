@@ -47,6 +47,9 @@ export const recentScores = (difficulty: BoardDifficulty | 'all') => call<{ scor
 export const songBoard = (songKey: string, difficulty: BoardDifficulty, lanes: number) =>
   call<{ scores: ScoreRow[] }>(`/api/scores/song?key=${encodeURIComponent(songKey)}&difficulty=${difficulty}&lanes=${lanes}`).then((r) => r.scores);
 
+/** Title and channel of a YouTube video (the browser version cannot read them from YouTube itself). */
+export const ytTitle = (id: string) => call<{ title: string; artist: string | null }>(`/api/yt/title?id=${encodeURIComponent(id)}`);
+
 export const publishScore = (s: ScoreSubmission) => call<PublishResult>('/api/scores', { method: 'POST', body: JSON.stringify(s) });
 
 /** Why a run cannot be published, or null when it can. */

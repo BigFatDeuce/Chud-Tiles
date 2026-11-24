@@ -135,3 +135,6 @@ export function validateScore(b: unknown): { ok: true; value: ScoreSubmission } 
   if (heads > v.duration * 30) return { ok: false, error: 'density' };
   return { ok: true, value: v };
 }
+
+/** The game's name for a YouTube video whose title it does not know yet (a bare link in the browser). */
+export const isPlaceholderTitle = (t: string | null | undefined) => !t || t === 'YouTube video' || t === 'Vidéo YouTube';

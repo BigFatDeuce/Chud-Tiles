@@ -2,7 +2,8 @@ import { fmtNum, tr, trn } from '../i18n';
 import { MusicVolume } from '../components/MusicVolume';
 import { OnlineBoard } from '../components/OnlineBoard';
 import { PreGamePublish } from '../components/PreGamePublish';
-import { songKeyOf } from '@shared/leaderboard';
+import { isPlaceholderTitle, songKeyOf } from '@shared/leaderboard';
+import { ytTitle } from '../online/leaderboard';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Globe, ArrowLeft, Dumbbell, Ear, Eye, Heart, Loader2, PenLine, Play, Radio, RotateCcw, Square, Zap } from 'lucide-react';
 import type { TrackRef } from '@shared/types';
@@ -164,6 +165,18 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
   const diff = s.difficulty;
   const t = lib.tracks[track.key] ?? track;
   const queue = useQueue(useShallow((q) => (q.items[q.index]?.key === track.key ? { name: q.name, at: q.index + 1, of: q.items.length } : null)));
+
+  // a YouTube song opened from a bare link has no title yet: ask the site for it
+  useEffect(() => {
+    if (t.source !== 'youtube' || !t.videoId || !isPlaceholderTitle(t.title)) return;
+    let alive = true;
+    ytTitle(t.videoId)
+      .then((info) => alive && void useLibrary.getState().add([{ ...t, title: info.title, artist: t.artist ?? info.artist }]))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [t.key, t.title]);
 
   // a song opened from elsewhere leaves the list being played
   useEffect(() => useQueue.getState().sync(track.key), [track.key]);
