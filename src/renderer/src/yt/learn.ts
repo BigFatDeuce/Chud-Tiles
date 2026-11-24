@@ -3,6 +3,7 @@ import { FRAME_SIZE, HOP } from '@core/analysis/frame';
 import type { Analysis } from '@core/analysis/analyze';
 import { analyseFrames, cachedAnalysis, storeAnalysis } from '../game/loader';
 import * as db from '../storage/db';
+import { shareOnce } from '../online/charts';
 import type { FramesBatch } from './host';
 
 // Learning a YouTube song: the feature frames measured while it plays (a live run, or a first
@@ -124,6 +125,7 @@ export async function learnFrom(ref: TrackRef, rec: FrameRecorder, duration: num
   await db.put('learned', stored, ref.key).catch(() => undefined);
   const analysis = await analyseFrames(times.slice(), frames.slice(), rec.step, duration);
   await storeAnalysis(ref, analysis);
+  void shareOnce(ref.videoId, analysis);
   return analysis;
 }
 

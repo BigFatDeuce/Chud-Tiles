@@ -8,10 +8,10 @@ import { useSettings } from '../store/settings';
 // sent unless the player asks (publish), and nothing at all when Settings › Online is off.
 
 /** The site itself talks to its own address; the desktop app and other hosts to the public one. */
-const base = () => (typeof location !== 'undefined' && location.hostname === new URL(LEADERBOARD_URL).hostname ? '' : LEADERBOARD_URL);
+export const base = () => (typeof location !== 'undefined' && location.hostname === new URL(LEADERBOARD_URL).hostname ? '' : LEADERBOARD_URL);
 
 /** Automated tests never reach the real server. */
-const offline = () => {
+export const offline = () => {
   if (!useSettings.getState().online) return true;
   return typeof window !== 'undefined' && (!!window.ct?.testing || navigator.webdriver);
 };

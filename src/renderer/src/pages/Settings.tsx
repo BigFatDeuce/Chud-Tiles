@@ -124,7 +124,7 @@ function GameTab() {
       <Row title={tr('Pause automatique')} hint={tr('Met en pause quand la fenêtre perd le focus')}>
         <Toggle on={s.autoPause} onChange={(v) => s.set({ autoPause: v })} label={tr('Pause automatique')} />
       </Row>
-      <Row title={tr('Classement en ligne')} hint={tr('Affiche les classements de chud-tiles.holy-c.men et permet d’y publier vos scores (un pseudo et le score, rien d’autre)')}>
+      <Row title={tr('Classement en ligne')} hint={tr('Classements et partitions partagées de chud-tiles.holy-c.men : vos scores publiés (un pseudo et le score) et l’analyse des morceaux YouTube appris ou téléchargés (rythme et structure, jamais le son)')}>
         <Toggle on={s.online} onChange={(v) => s.set({ online: v })} label={tr('Classement en ligne')} />
       </Row>
       <div className="row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>

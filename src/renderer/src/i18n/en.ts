@@ -715,7 +715,7 @@ export const EN: Record<string, string> = {
   'Aucun score publié pour l’instant : terminez un morceau et publiez le vôtre depuis l’écran de résultats.': 'No score published yet: finish a song and publish yours from the results screen.',
   'Ce fichier n’est pas dans vos archives.': 'This file is not in your archives.',
   'Choisissez un score pour voir le classement de son morceau.': 'Pick a score to see its song’s leaderboard.',
-  'Affiche les classements de chud-tiles.holy-c.men et permet d’y publier vos scores (un pseudo et le score, rien d’autre)': 'Shows the leaderboards of chud-tiles.holy-c.men and lets you publish your scores there (a name and the score, nothing else)',
+  'Classements et partitions partagées de chud-tiles.holy-c.men : vos scores publiés (un pseudo et le score) et l’analyse des morceaux YouTube appris ou téléchargés (rythme et structure, jamais le son)': 'Leaderboards and shared charts of chud-tiles.holy-c.men: the scores you publish (a name and the score) and the analysis of YouTube songs you learn or download (rhythm and structure, never the audio)',
   'Mise à jour {v} prête': 'Update {v} ready',
   'Elle s’installera à la fermeture du jeu, ou tout de suite :': 'It will install when the game closes, or right now:',
   'Redémarrer': 'Restart',

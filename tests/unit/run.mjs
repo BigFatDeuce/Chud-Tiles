@@ -11,6 +11,8 @@ import { generateChart } from '../../src/core/chart/generate.ts';
 import { DIFFICULTIES, paramsFor } from '../../src/core/chart/types.ts';
 import { LivePredictor } from '../../src/core/live/predictor.ts';
 import { validateScore, cleanPseudo, songKeyOf, maxScore } from '../../src/shared/leaderboard.ts';
+import { validateAnalysis, compactJson, gzip, gunzip, CHART_GZIP_MAX } from '../../src/shared/charts.ts';
+import { ANALYSIS_VERSION } from '../../src/core/analysis/analyze.ts';
 import { Judge, rankOf, accuracyOf, starsOf, fullCombo, WINDOWS, CENTRE_WINDOW, CENTRE_POINTS, centreBonus, multiplierFor } from '../../src/core/game/judge.ts';
 import { ACHIEVEMENTS, applyRun, emptyProfile, levelOf, titleOf, xpFor, xpToNext } from '../../src/core/game/progress.ts';
 import { fileURLToPath } from 'node:url';
@@ -413,6 +415,35 @@ test('leaderboard: score checks', () => {
   no({ songKey: 'http://evil' }, 'song key');
   no({ accuracy: 1.5 }, 'accuracy');
   ok(songKeyOf({ title: 'Artist - Song (Official Video)', artist: 'Artist', source: 'local' }) === songKeyOf({ title: 'Song', artist: 'Artist', source: 'file' }), 'same song, same board');
+});
+
+test('shared charts: an analysis survives the trip, a bad one is refused', async () => {
+  const { an } = song({ bars: 32, bpm: 128 });
+  const text = compactJson(an);
+  const z = await gzip(text);
+  ok(z.byteLength < CHART_GZIP_MAX, `gzip size ${z.byteLength}`);
+  const back = JSON.parse(await gunzip(z));
+  const v = validateAnalysis(back, ANALYSIS_VERSION);
+  ok(v.ok, `real analysis accepted (${v.ok ? '' : v.error})`);
+  const p = { difficulty: 'hard', params: paramsFor('hard'), seed: 3 };
+  const a = generateChart(an, p).notes;
+  const b = generateChart(v.value, p).notes;
+  ok(a.length === b.length && a.every((n, k) => Math.abs(n.t - b[k].t) < 1e-4 && n.lane === b[k].lane), 'same chart after rounding');
+  note(`shared chart: ${(text.length / 1024).toFixed(0)} KB JSON, ${(z.byteLength / 1024).toFixed(0)} KB gzip for ${an.duration.toFixed(0)} s`);
+  const no = (patch, why) => ok(!validateAnalysis({ ...back, ...patch }, ANALYSIS_VERSION).ok, `${why} refused`);
+  no({ version: ANALYSIS_VERSION - 1 }, 'old version');
+  no({ duration: 1e9 }, 'duration');
+  no({ grid: { ...back.grid, downbeat: back.grid.beats.length + 3 } }, 'downbeat out of range');
+  no({ onsets: [{ ...back.onsets[0], cls: 7 }] }, 'onset class');
+  no({ structure: { ...back.structure, bars: [{ ...back.structure.bars[0], section: 999 }] } }, 'section index');
+  no({ silences: [[5, 2]] }, 'silence backwards');
+  let big = false;
+  try {
+    await gunzip(await gzip('x'.repeat(2_000_000)), 1_000_000);
+  } catch {
+    big = true;
+  }
+  ok(big, 'gzip bomb stopped');
 });
 
 test('judge: a press takes the earliest pending note of the lane', () => {

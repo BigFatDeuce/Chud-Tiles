@@ -37,6 +37,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 - **Online leaderboard** on [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men): a board per song and difficulty, the 100 latest scores, a name chosen before or after the run.
 - **Updates** checked at launch: the Windows installer and the AppImage update themselves.
 - Music volume before the run and in the pause menu; YouTube songs play a normal run (full chart) by default.
+- **Shared charts** (1.1.2): a YouTube song learned or downloaded once is ready for everyone, in the browser too. Only the rhythm analysis is shared, never the audio.
 
 ## Features
 
@@ -79,7 +80,7 @@ Notes slide down glowing lanes toward a hit line: press the lane when they touch
 |---|---|---|
 | Windows 10/11 | `Chud-Tiles-Setup-<version>.exe`, `Chud-Tiles-<version>-Portable.exe` | installer in English or French, or a portable exe. Unsigned: SmartScreen asks once (*More info › Run anyway*). |
 | Linux x64 | `.AppImage`, `.tar.gz`, `.deb`, `.rpm` | AppImage: `chmod +x`, then run it. |
-| Browser | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), or your own static site (`npm run web:build`) served over HTTPS | Chrome or Edge recommended. Local files, and YouTube from a pasted link (tab audio sharing). |
+| Browser | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), or your own static site (`npm run web:build`) served over HTTPS | Chrome or Edge recommended. Local files, and YouTube from a pasted link: a song someone already learned or downloaded comes with its full chart (shared charts), otherwise tab audio sharing. |
 | macOS | `npm run dist:mac` on a Mac | configuration ready, not built or tested yet. |
 
 Your profile, records and analyses stay on your computer (`%APPDATA%\Chud Tiles` on Windows, `~/.config/Chud Tiles` on Linux, the browser's storage on the web).

@@ -12,8 +12,9 @@ import { generateChart } from '@core/chart/generate';
 import { CHART_VERSION, DIFFICULTIES, paramsFor, type Chart, type DifficultyId, type DifficultyParams } from '@core/chart/types';
 import { hashString } from '@core/util/rng';
 import type { PlayRecord } from '@core/game/progress';
-import { loadLocal, type LoadProgress } from '../game/loader';
+import { loadLocal, storeAnalysis, type LoadProgress } from '../game/loader';
 import { canAnalyse, ensureAnalysis, ytHost, YT_ENDED, type YtHost } from '../yt/host';
+import { fetchShared, shareOnce } from '../online/charts';
 import { FrameRecorder, forgetLearned, learnedAnalysis, learnFrom, LEARN_COVERAGE } from '../yt/learn';
 import { errorText, toast, toastError } from '../store/toasts';
 import { keyName, useSettings } from '../store/settings';
@@ -214,14 +215,25 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
           },
         );
       });
-      learnedAnalysis(track).then(
-        (a) => {
-          if (!alive) return;
-          if (a) setSong({ analysis: a, buffer: null, cached: true });
-          else setUnlearned(true);
-        },
-        () => alive && setUnlearned(true),
-      );
+      // learned here before, or by another player (shared chart), or still to learn
+      learnedAnalysis(track)
+        .then(async (a) => {
+          if (a) {
+            void shareOnce(track.videoId, a);
+            return a;
+          }
+          const shared = track.videoId ? await fetchShared(track.videoId) : null;
+          if (shared) await storeAnalysis(track, shared);
+          return shared;
+        })
+        .then(
+          (a) => {
+            if (!alive) return;
+            if (a) setSong({ analysis: a, buffer: null, cached: true });
+            else setUnlearned(true);
+          },
+          () => alive && setUnlearned(true),
+        );
       runsOf(track.key).then((r) => alive && setRuns(r));
       return () => {
         alive = false;
@@ -243,6 +255,7 @@ export function Song({ track, file }: { track: TrackRef; file?: File }) {
       .then((r) => {
         if (!alive) return;
         setSong({ analysis: r.analysis, buffer: r.buffer, cached: r.cached });
+        if (dl) void shareOnce(track.videoId, r.analysis);
         if (!track.duration) void lib.add([{ ...track, duration: r.buffer.duration }]);
       })
       .catch((e) => {

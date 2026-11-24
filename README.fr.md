@@ -37,6 +37,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 - **Classement en ligne** sur [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men) : un tableau par morceau et difficulté, les 100 derniers scores, un pseudo choisi avant ou après la partie.
 - **Mises à jour** cherchées au lancement : l'installeur Windows et l'AppImage se mettent à jour seuls.
 - Volume de la musique avant la partie et dans le menu pause ; les morceaux YouTube se jouent en partie normale (partition complète) par défaut.
+- **Partitions partagées** (1.1.2) : un morceau YouTube appris ou téléchargé une fois est prêt pour tout le monde, navigateur compris. Seule l'analyse du rythme est partagée, jamais le son.
 
 ## Ce qu'il sait faire
 
@@ -79,7 +80,7 @@ Les notes glissent sur des pistes lumineuses vers une ligne de frappe : appuyez 
 |---|---|---|
 | Windows 10/11 | `Chud-Tiles-Setup-<version>.exe`, `Chud-Tiles-<version>-Portable.exe` | installeur en français ou en anglais, ou exécutable portable. Non signé : SmartScreen demande une fois (*Informations complémentaires › Exécuter quand même*). |
 | Linux x64 | `.AppImage`, `.tar.gz`, `.deb`, `.rpm` | AppImage : `chmod +x`, puis lancez-la. |
-| Navigateur | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), ou votre propre site statique (`npm run web:build`) servi en HTTPS | Chrome ou Edge recommandés. Fichiers locaux, et YouTube à partir d'un lien collé (partage du son de l'onglet). |
+| Navigateur | [chud-tiles.holy-c.men](https://chud-tiles.holy-c.men), ou votre propre site statique (`npm run web:build`) servi en HTTPS | Chrome ou Edge recommandés. Fichiers locaux, et YouTube à partir d'un lien collé : un morceau déjà appris ou téléchargé par quelqu'un arrive avec sa partition complète (partitions partagées), sinon partage du son de l'onglet. |
 | macOS | `npm run dist:mac` sur un Mac | configuration prête, pas encore construite ni testée. |
 
 Votre profil, vos records et vos analyses restent sur votre ordinateur (`%APPDATA%\Chud Tiles` sous Windows, `~/.config/Chud Tiles` sous Linux, le stockage du navigateur sur le web).

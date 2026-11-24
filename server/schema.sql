@@ -38,3 +38,15 @@ CREATE TABLE IF NOT EXISTS posts (
   at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS posts_who ON posts (who, at);
+
+-- shared charts: a YouTube song's analysis (beats, attacks, sections; no audio), gzipped JSON
+CREATE TABLE IF NOT EXISTS charts (
+  video_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  source TEXT NOT NULL,
+  duration REAL NOT NULL,
+  data BLOB NOT NULL,
+  size INTEGER NOT NULL,
+  at INTEGER NOT NULL,
+  PRIMARY KEY (video_id, version)
+);

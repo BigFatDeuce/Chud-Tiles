@@ -5,9 +5,14 @@
 //   POST /api/scores                        publishes a score (checked by validateScore)
 //   GET  /api/yt/title?id=                  a YouTube video's title and channel (oEmbed): the browser
 //                                           version cannot read them itself
+//   GET  /api/charts/<videoId>?v=           a YouTube song's shared analysis (gzipped JSON), 404 if none
+//   POST /api/charts/<videoId>              shares one (gzipped JSON body, checked by validateAnalysis);
+//                                           kept if new, or if it replaces one learned by ear with a
+//                                           downloaded one
 // Players are not identified: a pseudo is a name, nothing more. The address of the sender is only
 // kept as a salted hash, for one hour, to limit how often scores can be sent.
 
+import { betterSource, CHART_GZIP_MAX, gunzip, validateAnalysis, VIDEO_ID, type ChartSource } from '../../src/shared/charts';
 import { BOARD_DIFFICULTIES, isPlaceholderTitle, pseudoKey, validateScore, type PublishResult, type ScoreRow } from '../../src/shared/leaderboard';
 
 interface D1Result<T> {
@@ -31,7 +36,7 @@ const BODY_MAX = 4096;
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'content-type',
+  'access-control-allow-headers': 'content-type, x-chart-version',
   'access-control-max-age': '86400',
 };
 
@@ -88,6 +93,48 @@ async function board(url: URL, env: Env): Promise<Response> {
   return json({ scores: results.map(({ best: _b, ...r }) => row(r)) }, 200, { 'cache-control': 'public, max-age=15' });
 }
 
+/** Counts a post by this sender; false when it sent too many in the last hour. */
+async function allowPost(req: Request, env: Env, now: number): Promise<{ ok: boolean; who: string }> {
+  const ip = req.headers.get('cf-connecting-ip') ?? 'unknown';
+  const who = await sha256(`${env.SALT ?? 'chud-tiles'}|${ip}`);
+  const recentPosts = await env.DB.prepare('SELECT COUNT(*) AS n FROM posts WHERE who = ? AND at > ?').bind(who, now - 3600_000).first<{ n: number }>();
+  return { ok: (recentPosts?.n ?? 0) < POSTS_PER_HOUR, who };
+}
+
+async function getChart(id: string, url: URL, env: Env): Promise<Response> {
+  const v = Number(url.searchParams.get('v'));
+  if (!VIDEO_ID.test(id) || !Number.isInteger(v)) return json({ error: 'query' }, 400);
+  const r = await env.DB.prepare('SELECT data, source FROM charts WHERE video_id = ? AND version = ?').bind(id, v).first<{ data: ArrayBuffer | number[]; source: string }>();
+  if (!r) return json({ error: 'not found' }, 404, { 'cache-control': 'public, max-age=60' });
+  const body = r.data instanceof ArrayBuffer ? r.data : new Uint8Array(r.data).buffer;
+  return new Response(body, { headers: { 'content-type': 'application/octet-stream', 'x-chart-source': r.source, 'cache-control': 'public, max-age=300', ...CORS, 'access-control-expose-headers': 'x-chart-source' } });
+}
+
+async function putChart(id: string, req: Request, env: Env): Promise<Response> {
+  const v = Number(req.headers.get('x-chart-version'));
+  if (!VIDEO_ID.test(id) || !Number.isInteger(v)) return json({ error: 'query' }, 400);
+  const bytes = new Uint8Array(await req.arrayBuffer());
+  if (bytes.byteLength > CHART_GZIP_MAX) return json({ error: 'size' }, 413);
+  let check;
+  try {
+    check = validateAnalysis(JSON.parse(await gunzip(bytes)), v);
+  } catch {
+    return json({ error: 'data' }, 400);
+  }
+  if (!check.ok) return json({ error: check.error }, 400);
+  const source = check.value.source as ChartSource;
+  const prev = await env.DB.prepare('SELECT source FROM charts WHERE video_id = ? AND version = ?').bind(id, v).first<{ source: ChartSource }>();
+  if (prev && !betterSource(source, prev.source)) return json({ kept: false }, 200);
+  const now = Date.now();
+  const gate = await allowPost(req, env, now);
+  if (!gate.ok) return json({ error: 'rate' }, 429, { 'retry-after': '600' });
+  await env.DB.batch([
+    env.DB.prepare('INSERT OR REPLACE INTO charts (video_id, version, source, duration, data, size, at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, v, source, check.value.duration, bytes, bytes.byteLength, now),
+    env.DB.prepare('INSERT INTO posts (who, at) VALUES (?, ?)').bind(gate.who, now),
+  ]);
+  return json({ kept: true }, 201);
+}
+
 async function publish(req: Request, env: Env): Promise<Response> {
   const text = await req.text();
   if (text.length > BODY_MAX) return json({ error: 'size' }, 413);
@@ -110,10 +157,8 @@ async function publish(req: Request, env: Env): Promise<Response> {
   }
   // how often: per sender address (salted hash, forgotten after an hour)
   const now = Date.now();
-  const ip = req.headers.get('cf-connecting-ip') ?? 'unknown';
-  const who = await sha256(`${env.SALT ?? 'chud-tiles'}|${ip}`);
-  const recentPosts = await env.DB.prepare('SELECT COUNT(*) AS n FROM posts WHERE who = ? AND at > ?').bind(who, now - 3600_000).first<{ n: number }>();
-  if ((recentPosts?.n ?? 0) >= POSTS_PER_HOUR) return json({ error: 'rate' }, 429, { 'retry-after': '600' });
+  const { ok, who } = await allowPost(req, env, now);
+  if (!ok) return json({ error: 'rate' }, 429, { 'retry-after': '600' });
   const pk = pseudoKey(s.pseudo);
   const prev = await env.DB.prepare('SELECT MAX(score) AS best FROM scores WHERE song_key = ? AND difficulty = ? AND lanes = ? AND pseudo_key = ?').bind(s.songKey, s.difficulty, s.lanes, pk).first<{ best: number | null }>();
   const id = crypto.randomUUID();
@@ -140,6 +185,9 @@ export default {
       if (req.method === 'GET' && url.pathname === '/api/scores/recent') return await recent(url, env);
       if (req.method === 'GET' && url.pathname === '/api/scores/song') return await board(url, env);
       if (req.method === 'POST' && url.pathname === '/api/scores') return await publish(req, env);
+      const chart = /^\/api\/charts\/([^/]+)$/.exec(url.pathname);
+      if (chart && req.method === 'GET') return await getChart(chart[1], url, env);
+      if (chart && req.method === 'POST') return await putChart(chart[1], req, env);
       if (req.method === 'GET' && url.pathname === '/api/health') return json({ ok: true });
       if (req.method === 'GET' && url.pathname === '/api/yt/title') {
         const info = await ytTitle(url.searchParams.get('id') ?? '').catch(() => null);

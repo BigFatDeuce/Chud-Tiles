@@ -173,6 +173,10 @@ Le site `chud-tiles.holy-c.men` est un Worker Cloudflare : il sert la version na
 | `GET /api/scores/song?key=&difficulty=&lanes=` | le classement d'un morceau : meilleur score de chaque pseudo |
 | `POST /api/scores` | publie un score (corps JSON `ScoreSubmission`) |
 | `GET /api/yt/title?id=` | titre et chaîne d'une vidéo YouTube (oEmbed), pour la version navigateur qui ne peut pas les lire ; un score YouTube publié sans titre le reçoit aussi |
+| `GET /api/charts/<videoId>?v=` | partition partagée : l'analyse d'un morceau YouTube (JSON gzip, en-tête `x-chart-source`), 404 s'il n'y en a pas pour cette version d'analyse |
+| `POST /api/charts/<videoId>` | partage une analyse (corps JSON gzip, en-tête `x-chart-version`), vérifiée champ par champ par `validateAnalysis` (`src/shared/charts.ts`) ; gardée si elle est nouvelle, ou si une analyse téléchargée (`offline`) remplace une analyse apprise à l'écoute (`learned`) |
+
+**Partitions partagées.** Seule l'analyse voyage (temps, attaques, mesures, sections ; jamais de son). Un morceau YouTube appris à l'écoute ou téléchargé avec yt-dlp est envoyé une fois (`online/charts.ts`, drapeau `chart-shared:<id>:<version>` dans `kv`) ; à l'ouverture d'un morceau YouTube jamais appris, la page Morceau demande d'abord l'analyse partagée et la garde dans le cache `analyses`. Les partitions se recalculent à l'identique depuis l'analyse sur chaque machine. Désactivé avec Réglages › Classement en ligne, comme le classement.
 
 - Un morceau est identifié par `yt:<id vidéo>` ou `s:<artiste>|<titre>` nettoyés (`songKeyOf`) : un même morceau a le même classement d'un joueur à l'autre. Classement par morceau, difficulté et nombre de colonnes.
 - Seuls comptent les morceaux terminés en Facile à Expert, hors entraînement, aperçu et parties en direct (notes prédites). Le serveur refuse les scores incohérents (`validateScore` : comptes de notes, combo, score maximal possible, pseudo).
